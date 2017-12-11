@@ -10,7 +10,7 @@ export default abstract class BaseEvent {
   }
 
   static comparator(a: BaseEvent, b: BaseEvent): number {
-    return b.timestamp - a.timestamp;
+    return a.timestamp - b.timestamp;
   }
 
 }

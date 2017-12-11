@@ -16,7 +16,8 @@ export default class EventQueue {
 
   @bind
   dequeue(): BaseEvent {
-    return this.internalQueue.dequeue();
+    const res = this.internalQueue.dequeue();
+    return res;
   }
 
   @bind

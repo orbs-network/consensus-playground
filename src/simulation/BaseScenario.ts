@@ -20,6 +20,8 @@ export default abstract class BaseScenario {
 
   abstract connectNodes(nodes: BaseNode[]): void;
 
+  abstract maxSimulationTimestampMs(): number;
+
   @bind
   start() {
     this.currentTimestamp = 0;
@@ -32,6 +34,7 @@ export default abstract class BaseScenario {
     while (!this.eventQueue.empty()) {
       const event = this.eventQueue.dequeue();
       this.currentTimestamp = event.timestamp;
+      if (this.currentTimestamp > this.maxSimulationTimestampMs()) break;
       event.target.handleEvent(event);
     }
   }
@@ -47,4 +50,5 @@ export default abstract class BaseScenario {
 export class ScenarioModule extends BaseScenario {
   createNodes(): BaseNode[] { return [] }
   connectNodes(nodes: BaseNode[]) {}
+  maxSimulationTimestampMs() { return 0 }
 }

@@ -29,4 +29,9 @@ export default class Scenario extends BaseScenario {
     }
   }
 
+  @bind
+  maxSimulationTimestampMs(): number {
+    return 6000;
+  }
+
 }
