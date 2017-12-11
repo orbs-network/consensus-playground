@@ -7,6 +7,7 @@ import bind from "bind-decorator";
 
 const NUM_NODES = 3;
 const NETWORK_DELAY_MS = 50;
+const MAX_SIMULATION_TIMESTAMP_MS = 6000;
 
 export default class Scenario extends BaseScenario {
 
@@ -31,7 +32,7 @@ export default class Scenario extends BaseScenario {
 
   @bind
   maxSimulationTimestampMs(): number {
-    return 6000;
+    return MAX_SIMULATION_TIMESTAMP_MS;
   }
 
 }
