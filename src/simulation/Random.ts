@@ -13,4 +13,9 @@ export default class Random {
     return this.randomizer();
   }
 
+  @bind
+  nextIntegerInRange(min: number, max: number): number {
+    return Math.round((max - min)*this.randomizer() + min);
+  }
+
 }
