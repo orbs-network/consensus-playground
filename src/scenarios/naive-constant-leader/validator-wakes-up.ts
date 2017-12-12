@@ -16,7 +16,7 @@ export default class Scenario extends BaseScenario {
   @bind
   createNodes(): BaseNode[] {
     return _.times(NUM_NODES, () => {
-      return new HonestNode(this)
+      return new HonestNode(this);
     });
   }
 

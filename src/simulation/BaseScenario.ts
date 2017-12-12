@@ -48,7 +48,7 @@ export default abstract class BaseScenario {
 
 // hack required to be able to instantiate dynamic instances polymorphically
 export class ScenarioModule extends BaseScenario {
-  createNodes(): BaseNode[] { return [] }
+  createNodes(): BaseNode[] { return []; }
   connectNodes(nodes: BaseNode[]) {}
-  maxSimulationTimestampMs() { return 0 }
+  maxSimulationTimestampMs() { return 0; }
 }

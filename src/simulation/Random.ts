@@ -12,5 +12,5 @@ export default class Random {
   next(): number {
     return this.randomizer();
   }
-  
+
 }
