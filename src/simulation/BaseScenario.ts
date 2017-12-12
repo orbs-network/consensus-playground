@@ -8,6 +8,7 @@ import bind from "bind-decorator";
 export default abstract class BaseScenario {
   public randomizer: Random;
   public currentTimestamp: number;
+  public numNodes: number;
   protected eventQueue: EventQueue;
   protected nodes: BaseNode[];
 
@@ -26,6 +27,7 @@ export default abstract class BaseScenario {
   start() {
     this.currentTimestamp = 0;
     this.nodes = this.createNodes();
+    this.numNodes = this.nodes.length;
     this.connectNodes(this.nodes);
     for (const node of this.nodes) {
       const event = new NodeStartEvent(this.currentTimestamp, node);
