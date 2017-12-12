@@ -4,7 +4,12 @@ import { ScenarioModule } from "./simulation/BaseScenario";
 
 function showUsage() {
   console.log(`Usage: node dist <scenario> [random-seed]`);
-  console.log(`Example: node dist naive-constant-leader/happy-flow seed1`);
+  console.log(`Example: node dist naive-fast-round-robin-leader/happy-flow seed1`);
+  console.log();
+  console.log(`Available scenarios:`);
+  for (const file of shell.ls("-d", "src/scenarios/*/*")) {
+    console.log(` ${file.slice("src/scenarios/".length, -3)}`);
+  }
   console.log();
 }
 
@@ -17,7 +22,7 @@ function loadScenario(scenarioName: string): typeof ScenarioModule {
 }
 
 if (!process.argv[2]) {
-  console.log(`ERROR: scenario not provided, exiting`);
+  console.log(`\nERROR: scenario not provided, exiting`);
   showUsage();
   process.exit();
 }
@@ -25,7 +30,7 @@ if (!process.argv[2]) {
 const scenarioName = process.argv[2];
 const Scenario = loadScenario(scenarioName);
 if (!Scenario) {
-  console.log(`ERROR: scenario with name '${scenarioName}' not found, exiting`);
+  console.log(`\nERROR: scenario with name '${scenarioName}' not found, exiting`);
   showUsage();
   process.exit();
 }

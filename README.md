@@ -9,8 +9,9 @@ A playground to simulate and experiment with various flavors of consensus algori
 
 ## Run
 
-* Run `node dist <scneario>`
-* Example: `node dist naive-constant-leader/happy-flow`
+* Run `node dist <scneario> [random-seed]`
+* Example: `node dist naive-fast-round-robin-leader/happy-flow`
+* Usage and list all scenarios: `node dist`
 
 ## Develop
 
