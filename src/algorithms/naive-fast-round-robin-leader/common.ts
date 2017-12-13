@@ -42,7 +42,6 @@ export class Utils {
       if (_.indexOf(block.validators, leader) === -1) return false; // leader must validate
       return _.uniq(block.validators).length >= numValidatorsRequired;
     } else {
-      if (_.indexOf(block.cancellors, leader) !== -1) return true; // leader alone is enough to cancel
       return _.uniq(block.cancellors).length >= numValidatorsRequired;
     }
   }

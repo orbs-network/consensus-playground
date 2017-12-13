@@ -33,12 +33,12 @@ export default class HonestNode extends BaseNode {
 
   @bind
   leaderProposeBlock(blockNumber: number): void {
-    if (!this.utils.isLeader(this.nextBlockNumber)) {
+    if (!this.utils.isLeader(blockNumber)) {
       this.log(`ERROR: tried to propose a block that I'm not leader for`);
       return;
     }
     const proposedBlock: Block = {
-      blockNumber: this.nextBlockNumber,
+      blockNumber: blockNumber,
       content: this.scenario.randomizer.next(), // random content synbolizing the transactions
       validators: [],
       cancellors: [],
@@ -51,7 +51,7 @@ export default class HonestNode extends BaseNode {
 
   @bind
   validatorReceivedProposedBlock(block: Block): void {
-    if (this.utils.isLeader(this.nextBlockNumber)) {
+    if (this.utils.isLeader(block.blockNumber)) {
       this.log(`ERROR: was asked to validate a block that I'm the leader for`);
       return;
     }
@@ -89,6 +89,10 @@ export default class HonestNode extends BaseNode {
 
   @bind
   addValidationVote(block: Block, validator: number): void {
+    if (this.closedBlocks[block.blockNumber]) {
+      this.broadcast(<Message>{ type: "ClosedBlock", block: this.closedBlocks[block.blockNumber] });
+      return;
+    }
     if (!this.collectingValidationVotes[block.blockNumber]) {
       this.collectingValidationVotes[block.blockNumber] = block;
     }
@@ -106,6 +110,10 @@ export default class HonestNode extends BaseNode {
 
   @bind
   addCancellationVote(block: Block, validator: number): void {
+    if (this.closedBlocks[block.blockNumber]) {
+      this.broadcast(<Message>{ type: "ClosedBlock", block: this.closedBlocks[block.blockNumber] });
+      return;
+    }
     if (!this.collectingCancellationVotes[block.blockNumber]) {
       this.collectingCancellationVotes[block.blockNumber] = block;
     }
@@ -119,6 +127,8 @@ export default class HonestNode extends BaseNode {
 
   @bind
   processClosedBlock(closedBlock: Block): void {
+    delete this.collectingValidationVotes[closedBlock.blockNumber];
+    delete this.collectingCancellationVotes[closedBlock.blockNumber];
     if (!this.utils.doesBlockHaveEnoughValidations(closedBlock)) {
       this.log(`ERROR: trying to process closed block without enough validations`);
       return;
@@ -127,6 +137,8 @@ export default class HonestNode extends BaseNode {
       const existingClosedBlock = this.closedBlocks[closedBlock.blockNumber];
       if (existingClosedBlock.content !== closedBlock.content) {
         this.log(`ERROR: received a different valid closed block for a number that was already closed, we have a fork!`);
+        this.log(` existing content ${existingClosedBlock.content}, validators ${existingClosedBlock.validators}, cancellors ${existingClosedBlock.cancellors}`);
+        this.log(` new content ${closedBlock.content}, validators ${closedBlock.validators}, cancellors ${closedBlock.cancellors}`);
         return;
       }
       return;
