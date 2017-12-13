@@ -44,6 +44,15 @@ export default abstract class BaseNode {
   }
 
   @bind
+  unicast(toNodeNumber: number, message: any): void {
+    for (const connection of this.outgoingConnections) {
+      if (connection.to.nodeNumber === toNodeNumber) {
+        connection.send(message);
+      }
+    }
+  }
+
+  @bind
   setTimeout(timeoutMs: number, message: any): void {
     const timestamp = this.scenario.currentTimestamp + timeoutMs;
     const event = new TimeoutEvent(timestamp, this, message);
