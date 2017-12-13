@@ -25,4 +25,9 @@ export default class EventQueue {
     return this.internalQueue.length === 0;
   }
 
+  @bind
+  size(): number {
+    return this.internalQueue.length;
+  }
+
 }
