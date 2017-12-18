@@ -9,6 +9,7 @@ const BLOCK_TIMEOUT_MS = 1000;
 
 interface Block {
   blockNumber: number;
+  content: number;
   validators: number[];
 }
 
@@ -31,7 +32,7 @@ export default class HonestNode extends BaseNode {
   @bind
   leaderStartNextBlock(): void {
     if (!this.isLeader()) return;
-    const nextBlock: Block = { blockNumber: this.nextBlockNumber, validators: [] };
+    const nextBlock: Block = { blockNumber: this.nextBlockNumber, content: this.scenario.randomizer.next(), validators: [] };
     this.log(`starting block ${nextBlock.blockNumber}`);
     this.pendingBlocks[this.nextBlockNumber] = nextBlock;
     this.setTimeout(BLOCK_TIMEOUT_MS, <Message>{ type: "BlockTimeout", block: nextBlock });
@@ -104,6 +105,16 @@ export default class HonestNode extends BaseNode {
         break;
       }
     }
+  }
+
+  @bind
+  benchmarkGetClosedBlocks(): Block[] {
+    return this.closedBlocks;
+  }
+
+  @bind
+  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
+    return block1.content == block2.content;
   }
 
 }

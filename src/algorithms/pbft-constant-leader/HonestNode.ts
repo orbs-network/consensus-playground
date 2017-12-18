@@ -294,5 +294,14 @@ export default class HonestNode extends BaseNode {
     this.startNextBlock(msg);
   }
 
+  @bind
+  benchmarkGetClosedBlocks(): Block[] {
+    return [];
+  }
+
+  @bind
+  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
+    return true;
+  }
 
 }

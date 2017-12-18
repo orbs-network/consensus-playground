@@ -34,7 +34,7 @@ export default class HonestNode extends BaseNode {
   @bind
   leaderProposeBlock(blockNumber: number): void {
     if (!this.utils.isLeader(blockNumber)) {
-      this.log(`ERROR: tried to propose a block that I'm not leader for`);
+      this.error(`tried to propose a block that I'm not leader for`);
       return;
     }
     const proposedBlock: Block = {
@@ -52,11 +52,11 @@ export default class HonestNode extends BaseNode {
   @bind
   validatorReceivedProposedBlock(block: Block): void {
     if (this.utils.isLeader(block.blockNumber)) {
-      this.log(`ERROR: was asked to validate a block that I'm the leader for`);
+      this.error(`was asked to validate a block that I'm the leader for`);
       return;
     }
     if (!this.utils.isBlockFromLeader(block)) {
-      this.log(`ERROR: received proposed block that isn't validated by its leader`);
+      this.error(`received proposed block that isn't validated by its leader`);
       return;
     }
     if (this.nextBlockNumber === block.blockNumber) {
@@ -67,7 +67,7 @@ export default class HonestNode extends BaseNode {
     if (this.closedBlocks[block.blockNumber]) {
       this.broadcast(<Message>{ type: "ClosedBlock", block: this.closedBlocks[block.blockNumber] });
     } else {
-      this.log(`WARNING: not in sync with proposed block, my next is ${this.nextBlockNumber} but block has ${block.blockNumber}`);
+      this.warn(`not in sync with proposed block, my next is ${this.nextBlockNumber} but block has ${block.blockNumber}`);
     }
   }
 
@@ -98,7 +98,7 @@ export default class HonestNode extends BaseNode {
     }
     const validatedBlock = this.collectingValidationVotes[block.blockNumber];
     if (validatedBlock.content !== block.content) {
-      this.log(`ERROR: got validation for block with incorrect content`);
+      this.error(`got validation for block with incorrect content`);
       return;
     }
     this.utils.addValidatorToBlock(validatedBlock, validator);
@@ -130,13 +130,13 @@ export default class HonestNode extends BaseNode {
     delete this.collectingValidationVotes[closedBlock.blockNumber];
     delete this.collectingCancellationVotes[closedBlock.blockNumber];
     if (!this.utils.doesBlockHaveEnoughValidations(closedBlock)) {
-      this.log(`ERROR: trying to process closed block without enough validations`);
+      this.error(`trying to process closed block without enough validations`);
       return;
     }
     if (this.closedBlocks[closedBlock.blockNumber]) {
       const existingClosedBlock = this.closedBlocks[closedBlock.blockNumber];
       if (existingClosedBlock.content !== closedBlock.content) {
-        this.log(`ERROR: received a different valid closed block for a number that was already closed, we have a fork!`);
+        this.error(`received a different valid closed block for a number that was already closed, we have a fork!`);
         this.log(` existing content ${existingClosedBlock.content}, validators ${existingClosedBlock.validators}, cancellors ${existingClosedBlock.cancellors}`);
         this.log(` new content ${closedBlock.content}, validators ${closedBlock.validators}, cancellors ${closedBlock.cancellors}`);
         return;
@@ -193,6 +193,16 @@ export default class HonestNode extends BaseNode {
         break;
       }
     }
+  }
+
+  @bind
+  benchmarkGetClosedBlocks(): Block[] {
+    return this.closedBlocks;
+  }
+
+  @bind
+  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
+    return (block1.content == block2.content) && (block1.cancelled == block2.cancelled);
   }
 
 }

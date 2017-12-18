@@ -150,11 +150,11 @@ export default class HonestNode extends BaseNode {
       return;
     }
     if (!this.utils.isBallotEqual(this.pendingProposals[slotIndex].ballot, msg.ballot)) {
-      this.log(`ERROR: accepted ballot doesn't match our ballot in pending proposals`);
+      this.error(`accepted ballot doesn't match our ballot in pending proposals`);
       return;
     }
     if (this.pendingProposals[slotIndex].block.content != msg.block.content) {
-      this.log(`ERROR: accepted block content doesn't match our block in pending proposals`);
+      this.error(`accepted block content doesn't match our block in pending proposals`);
       return;
     }
     this.collectingAccepts++;
@@ -173,7 +173,7 @@ export default class HonestNode extends BaseNode {
     if (this.closedBlocks[msg.block.blockNumber]) {
       const existingClosedBlock = this.closedBlocks[msg.block.blockNumber];
       if (existingClosedBlock.content != msg.block.content) {
-        this.log(`ERROR: received two closed blocks with the same block number, we have a fork!`);
+        this.error(`received two closed blocks with the same block number, we have a fork!`);
         return;
       }
     }
@@ -190,7 +190,7 @@ export default class HonestNode extends BaseNode {
   @bind
   handleRequestClosedBlock(msg: Message): void {
     if (!this.closedBlocks[msg.blockNumber]) {
-      this.log(`ERROR: node ${msg.sender} asked me for closed block ${msg.blockNumber} but I don't have it`);
+      this.error(`node ${msg.sender} asked me for closed block ${msg.blockNumber} but I don't have it`);
       return;
     }
     this.unicast(msg.sender, <Message>{ type: "ClosedBlock", sender: this.nodeNumber, block: this.closedBlocks[msg.blockNumber] });
@@ -259,6 +259,16 @@ export default class HonestNode extends BaseNode {
         break;
       }
     }
+  }
+
+  @bind
+  benchmarkGetClosedBlocks(): Block[] {
+    return this.closedBlocks;
+  }
+
+  @bind
+  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
+    return block1.content == block2.content;
   }
 
 }

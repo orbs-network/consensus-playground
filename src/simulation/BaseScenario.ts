@@ -2,6 +2,7 @@ import Random from "../simulation/Random";
 import EventQueue from "../simulation/EventQueue";
 import BaseEvent from "../simulation/BaseEvent";
 import BaseNode from "../simulation/BaseNode";
+import Statistics from "../simulation/Statistics";
 import NodeStartEvent from "../simulation/events/NodeStartEvent";
 import bind from "bind-decorator";
 
@@ -9,12 +10,14 @@ export default abstract class BaseScenario {
   public randomizer: Random;
   public currentTimestamp: number;
   public numNodes: number;
+  public statistics: Statistics;
   protected eventQueue: EventQueue;
   protected nodes: BaseNode[];
 
   constructor(seed: string) {
     this.randomizer = new Random(seed);
     this.eventQueue = new EventQueue();
+    this.statistics = new Statistics();
   }
 
   abstract createNodes(): BaseNode[];
@@ -38,7 +41,9 @@ export default abstract class BaseScenario {
       this.currentTimestamp = event.timestamp;
       if (this.currentTimestamp > this.maxSimulationTimestampMs()) break;
       event.target.handleEvent(event);
+      this.statistics.totalEvents++;
     }
+    this.statistics.maxTimestampMs = this.currentTimestamp;
   }
 
   @bind

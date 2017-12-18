@@ -3,13 +3,15 @@ import * as shell from "shelljs";
 import { ScenarioModule } from "./simulation/BaseScenario";
 
 function showUsage() {
-  console.log(`Usage: node dist <scenario> [random-seed]`);
+  console.log(`Usage 1: node dist <scenario> [random-seed]`);
   console.log(`Example: node dist naive-fast-round-robin-leader/happy-flow seed1`);
   console.log();
   console.log(`Available scenarios:`);
   for (const file of shell.ls("-d", "src/scenarios/*/*")) {
     console.log(` ${file.slice("src/scenarios/".length, -3)}`);
   }
+  console.log();
+  console.log(`Usage 2: node dist benchmark`);
   console.log();
 }
 
@@ -28,6 +30,10 @@ if (!process.argv[2]) {
 }
 
 const scenarioName = process.argv[2];
+if (scenarioName === "benchmark") {
+  require("./benchmark");
+  process.exit();
+}
 const Scenario = loadScenario(scenarioName);
 if (!Scenario) {
   console.log(`\nERROR: scenario with name '${scenarioName}' not found, exiting`);
