@@ -55,6 +55,38 @@ export default class BenchmarkOutput {
   start(): void {
     this.out(`
       <html>
+      <head>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700" rel="stylesheet">
+        <style>
+          body {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 10px;
+          }
+          h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #45ADA8;
+          }
+          th {
+            font-weight: 700;
+            text-align: left;
+            color: #45ADA8;
+            background-color: #E5FCC2;
+          }
+          table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+            font-size: 12px;
+          }
+          tr:nth-child(odd) {
+            background-color: #f8f8f8;
+          }
+          .right {
+            text-align: right;
+          }
+        </style>
+      </head>
       <body>
     `);
   }
@@ -73,6 +105,7 @@ export default class BenchmarkOutput {
       <h2>${this.currentScenarioData.name}</h2>
       <table>
       <tr>
+        <th>algorithm</th>
     `);
     for (const category of this.currentScenarioData.categories) {
       this.out(`
@@ -89,7 +122,7 @@ export default class BenchmarkOutput {
       `);
       for (const category of this.currentScenarioData.categories) {
         this.out(`
-          <td>${this.currentScenarioData.algorithmResults[algorithm][category]}</td>
+          <td class="right">${this.currentScenarioData.algorithmResults[algorithm][category]}</td>
         `);
       }
       this.out(`

@@ -1,9 +1,9 @@
-import Random from "../simulation/Random";
-import EventQueue from "../simulation/EventQueue";
-import BaseEvent from "../simulation/BaseEvent";
-import BaseNode from "../simulation/BaseNode";
-import Statistics from "../simulation/Statistics";
-import NodeStartEvent from "../simulation/events/NodeStartEvent";
+import Random from "./Random";
+import EventQueue from "./EventQueue";
+import BaseEvent from "./BaseEvent";
+import BaseNode from "./BaseNode";
+import Statistics from "./Statistics";
+import NodeStartEvent from "./events/NodeStartEvent";
 import bind from "bind-decorator";
 
 export default abstract class BaseScenario {
@@ -11,13 +11,14 @@ export default abstract class BaseScenario {
   public currentTimestamp: number;
   public numNodes: number;
   public statistics: Statistics;
+  public nodes: BaseNode[];
   protected eventQueue: EventQueue;
-  protected nodes: BaseNode[];
 
   constructor(seed: string) {
     this.randomizer = new Random(seed);
     this.eventQueue = new EventQueue();
     this.statistics = new Statistics();
+    BaseNode.resetNumNodes();
   }
 
   abstract createNodes(): BaseNode[];

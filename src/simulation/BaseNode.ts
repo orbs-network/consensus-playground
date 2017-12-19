@@ -30,6 +30,10 @@ export default abstract class BaseNode {
 
   abstract benchmarkAreClosedBlocksIdentical(block1: any, block2: any): boolean;
 
+  static resetNumNodes(): void {
+    BaseNode.numNodes = 0;
+  }
+
   @bind
   handleEvent(event: BaseEvent): void {
     if (event instanceof NodeStartEvent) {
