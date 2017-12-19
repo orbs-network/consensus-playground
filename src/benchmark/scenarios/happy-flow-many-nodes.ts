@@ -4,9 +4,9 @@ import BaseNode from "../../simulation/BaseNode";
 import StableConstantDelay from "../../simulation/connections/StableConstantDelay";
 import bind from "bind-decorator";
 
-const NUM_NODES = 5;
+const NUM_NODES = 20;
 const NETWORK_DELAY_MS = 50;
-const MAX_SIMULATION_TIMESTAMP_MS = 100000;
+const MAX_SIMULATION_TIMESTAMP_MS = 20000;
 
 export default class Scenario extends BaseScenarioWithNode {
 
