@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as shell from "shelljs";
+import BenchmarkOutput from "./BenchmarkOutput";
 import { ScenarioWithNodeModule } from "./BaseScenarioWithNode";
 import { NodeModule } from "../simulation/BaseNode";
 
@@ -19,45 +20,27 @@ function loadHonestNode(algorithmName: string): typeof NodeModule {
   }
 }
 
-let html = "";
-
+const output = new BenchmarkOutput();
+output.start();
 for (const file of shell.ls("-d", "src/benchmark/scenarios/*")) {
   const scenarioName = file.slice("src/benchmark/scenarios/".length, -3);
   const Scenario = loadScenario(scenarioName);
-
-  html += `
-<h2>${scenarioName}</h2>
-<table>
-  <tr>
-    <th>algorithm</th>
-    <th>warnings</th>
-    <th>errors</th>
-    <th>max timestamp</th>
-    <th>messages</th>
-  </tr>`;
-
+  output.startScenario(scenarioName);
   for (const file of shell.ls("-d", "src/algorithms/*")) {
     const algorithmName = file.slice("src/algorithms/".length);
     const Node = loadHonestNode(algorithmName);
-
     const randomSeed = "benchmark";
     const scenario = new Scenario(randomSeed, Node);
     scenario.start();
-    html += `
-  <tr>
-    <td>${algorithmName}</td>
-    <td>${scenario.statistics.totalWarnings}</td>
-    <td>${scenario.statistics.totalErrors}</td>
-    <td>${scenario.statistics.maxTimestampMs}</td>
-    <td>${scenario.statistics.totalSentMessages}</td>
-  </tr>`;
+    output.addAlgorithm(algorithmName);
+    output.addAlgorithmResult(algorithmName, "warnings", scenario.statistics.totalWarnings.toString());
+    output.addAlgorithmResult(algorithmName, "errors", scenario.statistics.totalErrors.toString());
+    output.addAlgorithmResult(algorithmName, "max timestamp", scenario.statistics.maxTimestampMs.toString());
+    output.addAlgorithmResult(algorithmName, "messages", scenario.statistics.totalSentMessages.toString());
   }
-
-  html += `
-</table>
-`;
-
+  output.endScenario();
 }
+output.end();
 
-shell.echo(html).to("benchmark.html");
+shell.echo(output.get()).to("benchmark.html");
 shell.exec("open benchmark.html");
