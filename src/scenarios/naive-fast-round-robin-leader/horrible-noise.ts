@@ -25,7 +25,7 @@ export default class Scenario extends BaseScenario {
     for (const fromNode of nodes) {
       for (const toNode of nodes) {
         if (fromNode !== toNode) {
-          const connection = new RandomDelayAndPacketLoss(this, toNode, NETWORK_MIN_DELAY_MS, NETWORK_MAX_DELAY_MS, NETWORK_PACKET_LOSS_PROBABILITY);
+          const connection = new RandomDelayAndPacketLoss(this, fromNode, toNode, NETWORK_MIN_DELAY_MS, NETWORK_MAX_DELAY_MS, NETWORK_PACKET_LOSS_PROBABILITY);
           fromNode.outgoingConnections.push(connection);
         }
       }

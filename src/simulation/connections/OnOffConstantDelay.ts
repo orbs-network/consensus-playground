@@ -9,8 +9,8 @@ export default class StableConstantDelay extends BaseConnection {
   protected startsOn: boolean;
   protected changesMs: number[];
 
-  constructor(scenario: BaseScenario, to: BaseNode, delayMs: number, startsOn: boolean, changesMs: number[]) {
-    super(scenario, to);
+  constructor(scenario: BaseScenario, from: BaseNode, to: BaseNode, delayMs: number, startsOn: boolean, changesMs: number[]) {
+    super(scenario, from, to);
     this.delayMs = delayMs;
     this.startsOn = startsOn;
     this.changesMs = changesMs;
@@ -32,6 +32,7 @@ export default class StableConstantDelay extends BaseConnection {
     if (!this.isOnAtTimestamp(timestamp)) return;
     const event = new MessageEvent(timestamp, this.to, message);
     this.scenario.postEvent(event);
+    this.scenario.statistics.recordActiveConnection(timestamp, this.from, this.to);
   }
 
 }

@@ -9,8 +9,8 @@ export default class RandomDelayAndPacketLoss extends BaseConnection {
   protected maxDelayMs: number;
   protected packetLossProbability: number;
 
-  constructor(scenario: BaseScenario, to: BaseNode, minDelayMs: number, maxDelayMs: number, packetLossProbability: number) {
-    super(scenario, to);
+  constructor(scenario: BaseScenario, from: BaseNode, to: BaseNode, minDelayMs: number, maxDelayMs: number, packetLossProbability: number) {
+    super(scenario, from, to);
     this.minDelayMs = Math.floor(minDelayMs);
     this.maxDelayMs = Math.ceil(maxDelayMs);
     this.packetLossProbability = packetLossProbability;
@@ -23,6 +23,7 @@ export default class RandomDelayAndPacketLoss extends BaseConnection {
     const timestamp = this.scenario.currentTimestamp + delayMs;
     const event = new MessageEvent(timestamp, this.to, message);
     this.scenario.postEvent(event);
+    this.scenario.statistics.recordActiveConnection(timestamp, this.from, this.to);
   }
 
 }

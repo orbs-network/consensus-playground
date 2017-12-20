@@ -13,6 +13,8 @@ function showUsage() {
   console.log();
   console.log(`Usage 2: node dist benchmark`);
   console.log();
+  console.log(`Usage 3: node dist visualize <interval-ms> <scenario> [random-seed]`);
+  console.log();
 }
 
 function loadScenario(scenarioName: string): typeof ScenarioModule {
@@ -34,6 +36,12 @@ if (scenarioName === "benchmark") {
   require("./benchmark");
   process.exit();
 }
+
+if (scenarioName === "visualize") {
+  require("./visualization");
+  process.exit();
+}
+
 const Scenario = loadScenario(scenarioName);
 if (!Scenario) {
   console.log(`\nERROR: scenario with name '${scenarioName}' not found, exiting`);

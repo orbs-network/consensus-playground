@@ -25,10 +25,10 @@ export default class Scenario extends BaseScenario {
       for (const toNode of nodes) {
         if (fromNode !== toNode) {
           if (toNode.nodeNumber === 4 || fromNode.nodeNumber === 4) {
-            const connection = new OnOffConstantDelay(this, toNode, NETWORK_DELAY_MS, false, []);
+            const connection = new OnOffConstantDelay(this, fromNode, toNode, NETWORK_DELAY_MS, false, []);
             fromNode.outgoingConnections.push(connection);
           } else {
-            const connection = new StableConstantDelay(this, toNode, NETWORK_DELAY_MS);
+            const connection = new StableConstantDelay(this, fromNode, toNode, NETWORK_DELAY_MS);
             fromNode.outgoingConnections.push(connection);
           }
         }

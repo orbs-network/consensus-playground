@@ -2,6 +2,10 @@ import * as _ from "lodash";
 import BaseNode from "./BaseNode";
 import BaseScenario from "./BaseScenario";
 
+interface RecordedMessagesInInterval {
+  activeConnections: {[from: number]: {[to: number]: boolean}};
+}
+
 export default class Statistics {
   public totalEvents: number = 0;
   public maxTimestampMs: number = 0;
@@ -12,6 +16,25 @@ export default class Statistics {
   public totalSentBytes: number = 0;
   public totalBroadcasts: number = 0;
   public totalUnicasts: number = 0;
+  public shouldRecordMessagesByInterval = -1; // interval > 0 in ms if you want to record
+  public recordedMessagesByInterval: RecordedMessagesInInterval[] = [];
+
+  // if interval 50, ts=0:index=0, ts=49:index=0, ts=50:index=1
+  getIntervalIndexForTimestamp(timestamp: number): number {
+    if (this.shouldRecordMessagesByInterval === -1) return -1;
+    return Math.floor(timestamp / this.shouldRecordMessagesByInterval);
+  }
+
+  recordActiveConnection(timestamp: number, from: BaseNode, to: BaseNode): void {
+    if (this.shouldRecordMessagesByInterval === -1) return;
+    const intervalIndex = this.getIntervalIndexForTimestamp(timestamp);
+    if (!this.recordedMessagesByInterval[intervalIndex]) {
+      this.recordedMessagesByInterval[intervalIndex] = {
+        activeConnections: {}
+      };
+    }
+    _.set(this.recordedMessagesByInterval[intervalIndex].activeConnections, [from.nodeNumber, to.nodeNumber], true);
+  }
 
   static numClosedBlocksPerNode(scenario: BaseScenario): number[] {
     const numClosedBlocksPerNode = [];

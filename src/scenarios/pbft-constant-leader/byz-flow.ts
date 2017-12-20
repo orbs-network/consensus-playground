@@ -33,7 +33,7 @@ export default class Scenario extends BaseScenario {
     for (const fromNode of nodes) {
       for (const toNode of nodes) {
         if (fromNode !== toNode) {
-          const connection = new StableConstantDelay(this, toNode, NETWORK_DELAY_MS);
+          const connection = new StableConstantDelay(this, fromNode, toNode, NETWORK_DELAY_MS);
           fromNode.outgoingConnections.push(connection);
         }
       }
