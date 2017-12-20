@@ -60,7 +60,7 @@ export default class VisualizationOutput {
   getRenderedLegend(): string {
     let res = "";
     for (const value in this.statistics.recordedMessageValues) {
-      res += `  <div style="background-color: ${this.colorize(value)}; padding: 12px; margin: 12px;">${value}</div>\n`;
+      res += `  <div style="opacity: 0.75; background-color: ${this.colorize(value)}; padding: 12px; margin: 12px;">${value}</div>\n`;
     }
     return res;
   }
