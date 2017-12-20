@@ -42,11 +42,25 @@ export default class VisualizationOutput {
       if (messages) {
         for (const from in messages.activeConnections) {
           for (const to in messages.activeConnections[from]) {
-            res += `        {source:{id:'${from}',start:.48,end:.52},target:{id:'${to}',start:.38,end:.62}},\n`;
+            res += `        {source:{id:'${from}',start:.48,end:.52},target:{id:'${to}',start:.38,end:.62},v:"${messages.activeConnections[from][to]}"},\n`;
           }
         }
       }
       res += "      ],\n";
+    }
+    return res;
+  }
+
+  colorize(v: string) {
+    const i = Math.abs(v.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)) % 19;
+    return ["#F44336","#E91E63","#9C27B0","#673AB7","#3F51B5","#2196F3","#03A9F4","#00BCD4","#009688","#4CAF50","#8BC34A","#CDDC39","#FFEB3B","#FFC107","#FF9800","#FF5722","#795548","#9E9E9E","#607D8B"][i];
+  }
+
+  @bind
+  getRenderedLegend(): string {
+    let res = "";
+    for (const value in this.statistics.recordedMessageValues) {
+      res += `  <div style="background-color: ${this.colorize(value)}; padding: 12px; margin: 12px;">${value}</div>\n`;
     }
     return res;
   }
@@ -62,7 +76,7 @@ export default class VisualizationOutput {
           <style>
             body {
               font-family: 'Roboto Mono', monospace;
-              font-size: 10px;
+              font-size: 12px;
             }
             h2 {
               font-size: 16px;
@@ -83,6 +97,9 @@ export default class VisualizationOutput {
             <input type="range" name="points" min="0" max="${this.statistics.recordedMessagesByInterval.length - 1}" step="1" value="0" id="slider-time" style="width:900px">
             <div id="timestamp"></div>
           </center>
+          <div style="position: fixed; left: 30; top: 100;">
+            ${this.getRenderedLegend()}
+          </div>
         <script>
 
       var labels = [
@@ -113,6 +130,10 @@ ${this.getRenderedDataPoints()}
         }
       }).render();
       var lastUpdate = -1;
+      function colorize(v) {
+        var i = Math.abs(v.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)) % 19;
+        return ["#F44336","#E91E63","#9C27B0","#673AB7","#3F51B5","#2196F3","#03A9F4","#00BCD4","#009688","#4CAF50","#8BC34A","#CDDC39","#FFEB3B","#FFC107","#FF9800","#FF5722","#795548","#9E9E9E","#607D8B"][i];
+      }
       function update(v) {
         if (lastUpdate == v) return;
         lastUpdate = v;
@@ -122,7 +143,8 @@ ${this.getRenderedDataPoints()}
           radius: 0.5,
           logScale: false,
           opacity: 0.7,
-          color: "#ff5722",
+          color: function (datum) { return colorize(datum.v); },
+          tooltipContent: function (datum) { return datum.v; },
           events: {}
         }).render();
       }

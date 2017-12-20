@@ -18,6 +18,7 @@ export default class Statistics {
   public totalUnicasts: number = 0;
   public shouldRecordMessagesByInterval = -1; // interval > 0 in ms if you want to record
   public recordedMessagesByInterval: RecordedMessagesInInterval[] = [];
+  public recordedMessageValues: {[value: string]: boolean} = {};
 
   // if interval 50, ts=0:index=0, ts=49:index=0, ts=50:index=1
   getIntervalIndexForTimestamp(timestamp: number): number {
@@ -25,7 +26,7 @@ export default class Statistics {
     return Math.floor(timestamp / this.shouldRecordMessagesByInterval);
   }
 
-  recordActiveConnection(timestamp: number, from: BaseNode, to: BaseNode): void {
+  recordActiveConnection(timestamp: number, from: BaseNode, to: BaseNode, message: any): void {
     if (this.shouldRecordMessagesByInterval === -1) return;
     const intervalIndex = this.getIntervalIndexForTimestamp(timestamp);
     if (!this.recordedMessagesByInterval[intervalIndex]) {
@@ -33,7 +34,9 @@ export default class Statistics {
         activeConnections: {}
       };
     }
-    _.set(this.recordedMessagesByInterval[intervalIndex].activeConnections, [from.nodeNumber, to.nodeNumber], true);
+    const value = _.get(message, "type", "Unknown");
+    _.set(this.recordedMessagesByInterval[intervalIndex].activeConnections, [from.nodeNumber, to.nodeNumber], value);
+    _.set(this.recordedMessageValues, value, true);
   }
 
   static numClosedBlocksPerNode(scenario: BaseScenario): number[] {

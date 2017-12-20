@@ -17,7 +17,7 @@ export default class StableConstantDelay extends BaseConnection {
     const timestamp = this.scenario.currentTimestamp + this.delayMs;
     const event = new MessageEvent(timestamp, this.to, message);
     this.scenario.postEvent(event);
-    this.scenario.statistics.recordActiveConnection(timestamp, this.from, this.to);
+    this.scenario.statistics.recordActiveConnection(timestamp, this.from, this.to, message);
   }
 
 }
