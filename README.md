@@ -21,6 +21,7 @@ A playground to simulate and experiment with various flavors of consensus algori
 
 * Run `node dist visualize <interval-ms> <scenario> [random-seed]`
 * Example: `node dist visualize 50 sleeping-multi-paxos/happy-flow`
+* [This is what it looks like](http://htmlpreview.github.io/?https://github.com/orbs-network/consensus-playground/blob/master/example.html)
 
 ## Develop
 
