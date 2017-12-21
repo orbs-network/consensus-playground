@@ -164,7 +164,6 @@ export default class HonestNode extends BaseNode {
       const closedBlockMessage = <Message>{ type: "ClosedBlock", sender: this.nodeNumber, block: msg.block };
       this.handleClosedBlock(closedBlockMessage);
       this.broadcast(closedBlockMessage);
-      this.randomSleepBeforeStarting();
     }
   }
 
@@ -185,6 +184,7 @@ export default class HonestNode extends BaseNode {
       delete this.pendingProposals[slot];
       slot++;
     }
+    this.randomSleepBeforeStarting();
   }
 
   @bind
