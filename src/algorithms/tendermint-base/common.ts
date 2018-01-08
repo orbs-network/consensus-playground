@@ -10,6 +10,7 @@ export interface Block {
 }
 
 export interface Proposal {
+  proposalID: number; // assuming this is a kind of hash, to make comparisons simpler
   block: Block;
   height: number;
   round: number;
@@ -33,6 +34,22 @@ export class Utils {
   }
 
   @bind
+  createNilBlock(): Block {
+    const res: Block = {
+      blockNumber: -1,
+      content: -1
+    };
+    return res;
+  }
+
+  @bind
+  isNilProposal(proposal: Proposal): boolean {
+    return (proposal.proposalID == -1);
+  }
+
+
+
+  @bind
   isProposalEqual(proposal1: Proposal, proposal2: Proposal): boolean {
     if (this.isBlockEqual(proposal1.block, proposal2.block)) return false;
     if (proposal1.height != proposal2.height) return false;
@@ -48,7 +65,7 @@ export class Utils {
 
   @bind
   isPolka(num: number): boolean {
-    return (num > Math.ceil(BYZ_MAJORITY * this.numNodes));
+    return (num >= Math.ceil(BYZ_MAJORITY * this.numNodes));
   }
 
   @bind
@@ -62,5 +79,36 @@ export class Utils {
     return res;
   }
 
+  @bind
+  count(target: number, array: number[]): number {
+    let res = 0;
+    for (const entry of array) {
+      if (entry == target) {
+        res += 1;
+      }
+    }
+    return res;
+  }
 
+  @bind
+  getPolkaProposal(proposalArray: Proposal[]): Proposal {
+    const idList: number[] = [];
+    const idMap: Map<number, Proposal> = new Map<number, Proposal>();
+    if (!proposalArray) return undefined;
+    for (const entry of proposalArray) {
+      if (entry) {
+        idList.push(entry.proposalID);
+        if (!idMap.has(entry.proposalID)) idMap[entry.proposalID] = entry;
+      }
+    }
+    const uniqueIds = new Set(idList);
+    for (const id of uniqueIds) {
+      const voteCount: number = this.count(id, idList);
+      // console.log(`vote count for ${id} is ${voteCount}`);
+      if (this.isPolka(voteCount)) {
+        return idMap[id];
+      }
+    }
+    return undefined;
+  }
 }

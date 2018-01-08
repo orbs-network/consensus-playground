@@ -1,0 +1,38 @@
+import * as _ from "lodash";
+import BaseScenario from "../../simulation/BaseScenario";
+import BaseNode from "../../simulation/BaseNode";
+import { HonestNode } from "../../algorithms/tendermint-base";
+import StableConstantDelay from "../../simulation/connections/StableConstantDelay";
+import bind from "bind-decorator";
+
+const NUM_NODES = 5;
+const NETWORK_DELAY_MS = 50;
+const MAX_SIMULATION_TIMESTAMP_MS = 10000;
+
+export default class Scenario extends BaseScenario {
+
+  @bind
+  createNodes(): BaseNode[] {
+    return _.times(NUM_NODES, () => {
+      return new HonestNode(this);
+    });
+  }
+
+  @bind
+  connectNodes(nodes: BaseNode[]): void {
+    for (const fromNode of nodes) {
+      for (const toNode of nodes) {
+        if (fromNode !== toNode) {
+          const connection = new StableConstantDelay(this, fromNode, toNode, NETWORK_DELAY_MS);
+          fromNode.outgoingConnections.push(connection);
+        }
+      }
+    }
+  }
+
+  @bind
+  maxSimulationTimestampMs(): number {
+    return MAX_SIMULATION_TIMESTAMP_MS;
+  }
+
+}

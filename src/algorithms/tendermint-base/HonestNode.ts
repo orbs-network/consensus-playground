@@ -14,19 +14,18 @@ const PROPOSAL_STUCK_TIMEOUT_MS = 2000;
 interface Message {
   type: string;
   sender: number;
-  round: number;
+  round?: number;
   block?: Block;
-  proposal: Proposal;
+  proposal?: Proposal;
 }
 
 export default class HonestNode extends BaseNode {
   protected closedBlocks: Block[] = [];
-  protected nodeOrder: number[];
+  protected nodeOrder: number[] = [];
   protected roundNumber: number;
-  protected lockRound: number;
-  protected lockedBlock: Block = undefined;
+  protected lockedProposal: Proposal = undefined;
   protected collectingPrevotes: Proposal[];
-  protected collectingPrecommits: boolean[]; // during propose value
+  protected collectingPrecommits: Proposal[]; // during propose value
   protected utils: Utils;
 
   @bind
@@ -34,13 +33,13 @@ export default class HonestNode extends BaseNode {
     this.setTimeout(PROPOSAL_STUCK_TIMEOUT_MS, <Message>{ type: "ProposalStuckTimeout", round: this.roundNumber });
     let blockToPropose: Block = undefined;
     const newHeight: number = this.closedBlocks.length + 1;
-    if (this.lockedBlock) {
-      blockToPropose = this.lockedBlock;
+    if (this.lockedProposal) {
+      blockToPropose = this.lockedProposal.block;
     }
     else {
       blockToPropose = this.createNewBlock(newHeight);
     }
-    const proposal: Proposal = { block: blockToPropose, height: newHeight, round: this.roundNumber, proposerID: this.nodeNumber };
+    const proposal: Proposal = { proposalID: this.scenario.randomizer.next(), block: blockToPropose, height: newHeight, round: this.roundNumber, proposerID: this.nodeNumber };
     this.collectingPrevotes = [];
     this.collectingPrevotes[this.nodeNumber] = proposal;
     this.broadcast(<Message>{ type: "ProposeBlock", sender: this.nodeNumber, proposal: proposal });
@@ -48,28 +47,84 @@ export default class HonestNode extends BaseNode {
 
   @bind
   handleProposeBlock(msg: Message): void {
-    if (!this.isValidProposal) {
-      // TODO prevote nil
+    let vote: Proposal = this.createNilVote();
+    if (this.isValidProposal) {
+      this.setTimeout(PROPOSAL_STUCK_TIMEOUT_MS, <Message>{ type: "ProposalStuckTimeout", round: this.roundNumber });
+      vote = msg.proposal;
     }
-    this.setTimeout(PROPOSAL_STUCK_TIMEOUT_MS, <Message>{ type: "ProposalStuckTimeout", round: this.roundNumber });
     // validators should broadcast their votes to the rest, and update their vote counter (for their own vote)
-    this.broadcast(<Message>{ type: "VoteMessage", sender: this.nodeNumber, proposal: msg.proposal });
-    this.collectingPrevotes[this.nodeNumber] = msg.proposal;
-    // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it TODO revise this in
-    if (this.utils.isPolka(this.utils.countProposal(msg.proposal, this.collectingPrevotes))) {
-      this.handlePolka(msg.proposal);
-    }
-  }
-
-  @bind
-  handlePolka(proposal: Proposal): void {
-    // TODO
+    const voteMsg: Message = { type: "VoteMessage", sender: this.nodeNumber, proposal: vote };
+    this.broadcast(voteMsg);
+    this.handleVoteMessage(voteMsg);
     return;
   }
 
+  @bind
+  handleVoteMessage(msg: Message): void {
+    // TODO this could happen before proposal even received, check desired behavior
+    if (!this.collectingPrevotes[msg.sender]) this.collectingPrevotes[msg.sender] = msg.proposal;
+    // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it
+    const res: Proposal = this.utils.getPolkaProposal(this.collectingPrevotes);
+    if (res) this.handlePolkaPrevote(res);
+    return;
+  }
 
+  @bind
+  handlePolkaPrevote(proposal: Proposal): void {
+    // if validator locked on a previous precommit, he won't precommit to a  new block until he sees a polka for a new precommit.
+    if (this.lockedProposal && !this.utils.isProposalEqual(this.lockedProposal, proposal)) {
+      this.log(`Locked on previous precommitted proposal ${this.lockedProposal.proposalID} with block {${this.lockedProposal.block.blockNumber}, ${this.lockedProposal.block.content}}`);
+    }
+    else { // pre-commit this proposal
+      this.log(`observed prevote polka for proposal ${proposal.proposalID} with content of block {${proposal.block.blockNumber}, ${proposal.block.content}}`);
+      this.lockedProposal = proposal;
+      const preCommitMsg: Message = { type: "PrecommitMessage", sender: this.nodeNumber, proposal: proposal };
+      this.broadcast(preCommitMsg);
+      this.handlePrecommitMessage(preCommitMsg);
+    }
+    return;
+  }
 
+  @bind
+  handlePrecommitMessage(msg: Message): void {
+    // TODO this could happen before proposal even received, check desired behavior
+    if (!this.collectingPrecommits[msg.sender]) this.collectingPrecommits[msg.sender] = msg.proposal;
+    // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it
+    const res: Proposal = this.utils.getPolkaProposal(this.collectingPrecommits);
+    if (res) this.handlePolkaPrecommit(res);
+    return;
+  }
 
+  @bind
+  handlePolkaPrecommit(proposal: Proposal): void {
+    this.log(`observed precommit polka for proposal ${proposal.proposalID} with content of block {${proposal.block.blockNumber}, ${proposal.block.content}}`);
+    if (this.lockedProposal && (this.lockedProposal.round < this.roundNumber)) {
+      this.lockedProposal = proposal; // once validator sees precommit polka at a higher round than that he locked on, he can relock on the newer block and precommit to it.
+    }
+    // move to new round
+    if (this.utils.isNilProposal(proposal)) {
+      this.beginNewRound(this.roundNumber + 1);
+    }
+    else {
+      this.closedBlocks.push(proposal.block);
+      this.beginNewRound(0);
+    }
+    return;
+  }
+
+  @bind
+  beginNewRound(roundNumber: number): void {
+    // begin new round of voting
+    this.log(`beginning new round ${roundNumber}`);
+    this.roundNumber = roundNumber;
+    this.lockedProposal = undefined;
+    this.collectingPrevotes = [];
+    this.collectingPrecommits = [];
+    if (this.nodeOrder[this.roundNumber] == this.nodeNumber) {
+      this.startClosingNextUnconfirmedBlock();
+    }
+    return;
+  }
 
   @bind
   createNewBlock(blockNumber: number): Block {
@@ -82,8 +137,21 @@ export default class HonestNode extends BaseNode {
   }
 
   @bind
+  createNilVote(): Proposal {
+    const nilBlock: Block = this.utils.createNilBlock();
+    const nilVote: Proposal = {
+      proposalID: -1,
+      block: nilBlock,
+      height: this.closedBlocks.length + 1,
+      round: this.roundNumber,
+      proposerID: this.nodeNumber
+    };
+    return nilVote;
+  }
+
+  @bind
   isValidBlock() {
-    // currently just placeholder, should check txs, pointer to lest block, etc...
+    // currently just placeholder, should check txs, pointer to last block, etc...
     return true;
   }
 
@@ -100,17 +168,13 @@ export default class HonestNode extends BaseNode {
       return false;
     }
     // prevote-the-lock: if node is locked on a block they must prevote for it TODO  and only it??
-    if (this.lockedBlock) {
-      if (!this.utils.isBlockEqual(prpsMsg.proposal.block, this.lockedBlock)) {
+    if (this.lockedProposal) {
+      if (!this.utils.isBlockEqual(prpsMsg.proposal.block, this.lockedProposal.block)) {
         return false;
       }
     }
     return true;
   }
-
-
-
-
 
 
   @bind
@@ -124,12 +188,12 @@ export default class HonestNode extends BaseNode {
   }
   @bind
   onStart(event: NodeStartEvent): void {
-    this.roundNumber = 0;
-    this.utils = new Utils(this.scenario.numNodes, this.nodeNumber);
-    // if first in round robin, start closing next block
-    if (this.nodeNumber == this.nodeOrder[this.roundNumber]) {
-      this.startClosingNextUnconfirmedBlock();
+    const order: number[] = [];
+    for (let i = 1; i <= this.scenario.numNodes; i++) {
+      this.nodeOrder.push(i);
     }
+    this.utils = new Utils(this.scenario.numNodes, this.nodeNumber);
+    this.beginNewRound(0);
   }
 
   @bind
@@ -141,7 +205,11 @@ export default class HonestNode extends BaseNode {
         break;
       }
       case "VoteMessage": {
-        // TODO implement
+        this.handleVoteMessage(msg);
+        break;
+      }
+      case "PrecommitMessage": {
+        this.handlePrecommitMessage(msg);
         break;
       }
     }
