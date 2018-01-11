@@ -72,8 +72,8 @@ export default class HonestNode extends BaseNode {
       const res: Proposal = this.utils.getPolkaProposal(this.collectingPrevotes);
       if (res) this.handlePolkaPrevote(res);
       else {
-        this.log(`No polka for prevote`);
-        this.utils.printProposals(this.collectingPrevotes);
+        // this.log(`No polka for prevote`);
+        // this.utils.printProposals(this.collectingPrevotes);
       }
     }
     return;
@@ -107,8 +107,8 @@ export default class HonestNode extends BaseNode {
       const res: Proposal = this.utils.getPolkaProposal(this.collectingPrecommits);
       if (res) this.handlePolkaPrecommit(res);
       else {
-        this.log(`No polka for precommit`);
-        this.utils.printProposals(this.collectingPrecommits);
+        // this.log(`No polka for precommit`);
+        // this.utils.printProposals(this.collectingPrecommits);
       }
     }
     return;
