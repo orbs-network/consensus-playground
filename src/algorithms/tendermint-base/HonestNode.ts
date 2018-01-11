@@ -24,6 +24,8 @@ export default class HonestNode extends BaseNode {
   protected nodeOrder: number[] = [];
   protected roundNumber: number;
   protected lockedProposal: Proposal = undefined;
+  protected inPrevoteStage: boolean;
+  protected inPreCommitStage: boolean;
   protected collectingPrevotes: Proposal[];
   protected collectingPrecommits: Proposal[]; // during propose value
   protected utils: Utils;
@@ -43,29 +45,37 @@ export default class HonestNode extends BaseNode {
     this.collectingPrevotes = [];
     this.collectingPrevotes[this.nodeNumber] = proposal;
     this.broadcast(<Message>{ type: "ProposeBlock", sender: this.nodeNumber, proposal: proposal });
+    this.inPrevoteStage = true;
   }
 
   @bind
   handleProposeBlock(msg: Message): void {
-    let vote: Proposal = this.createNilVote();
-    if (this.isValidProposal) {
-      this.setTimeout(PROPOSAL_STUCK_TIMEOUT_MS, <Message>{ type: "ProposalStuckTimeout", round: this.roundNumber });
-      vote = msg.proposal;
+    if (this.isValidProposal(msg)) {
+      this.inPrevoteStage = true;
+      this.collectingPrevotes[msg.sender] = msg.proposal;
+      // validators should broadcast their votes to the rest, and update their vote counter (for their own vote)
+      const voteMsg: Message = { type: "VoteMessage", sender: this.nodeNumber, proposal: msg.proposal };
+      this.broadcast(voteMsg);
+      this.handleVoteMessage(voteMsg);
     }
-    // validators should broadcast their votes to the rest, and update their vote counter (for their own vote)
-    const voteMsg: Message = { type: "VoteMessage", sender: this.nodeNumber, proposal: vote };
-    this.broadcast(voteMsg);
-    this.handleVoteMessage(voteMsg);
+
     return;
   }
 
   @bind
   handleVoteMessage(msg: Message): void {
     // TODO this could happen before proposal even received, check desired behavior
-    if (!this.collectingPrevotes[msg.sender]) this.collectingPrevotes[msg.sender] = msg.proposal;
-    // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it
-    const res: Proposal = this.utils.getPolkaProposal(this.collectingPrevotes);
-    if (res) this.handlePolkaPrevote(res);
+    if (!this.collectingPrevotes[msg.sender] && this.closedBlocks.length + 1 == msg.proposal.height) this.collectingPrevotes[msg.sender] = msg.proposal;
+    else this.log(`ignored message ${JSON.stringify(msg)}`);
+    if (this.inPrevoteStage) {
+      // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it
+      const res: Proposal = this.utils.getPolkaProposal(this.collectingPrevotes);
+      if (res) this.handlePolkaPrevote(res);
+      else {
+        this.log(`No polka for prevote`);
+        this.utils.printProposals(this.collectingPrevotes);
+      }
+    }
     return;
   }
 
@@ -73,11 +83,13 @@ export default class HonestNode extends BaseNode {
   handlePolkaPrevote(proposal: Proposal): void {
     // if validator locked on a previous precommit, he won't precommit to a  new block until he sees a polka for a new precommit.
     if (this.lockedProposal && !this.utils.isProposalEqual(this.lockedProposal, proposal)) {
-      this.log(`Locked on previous precommitted proposal ${this.lockedProposal.proposalID} with block {${this.lockedProposal.block.blockNumber}, ${this.lockedProposal.block.content}}`);
+      this.log(`Locked on previous precommitted proposal ${this.lockedProposal.proposalID} with block {${this.lockedProposal.block.blockNumber}, ${this.lockedProposal.block.content}, different from ${proposal.proposalID} with block {${proposal.block.blockNumber}, ${proposal.block.content}}`);
     }
     else { // pre-commit this proposal
       this.log(`observed prevote polka for proposal ${proposal.proposalID} with content of block {${proposal.block.blockNumber}, ${proposal.block.content}}`);
       this.lockedProposal = proposal;
+      this.inPrevoteStage = false;
+      this.inPreCommitStage = true;
       const preCommitMsg: Message = { type: "PrecommitMessage", sender: this.nodeNumber, proposal: proposal };
       this.broadcast(preCommitMsg);
       this.handlePrecommitMessage(preCommitMsg);
@@ -88,10 +100,17 @@ export default class HonestNode extends BaseNode {
   @bind
   handlePrecommitMessage(msg: Message): void {
     // TODO this could happen before proposal even received, check desired behavior
-    if (!this.collectingPrecommits[msg.sender]) this.collectingPrecommits[msg.sender] = msg.proposal;
-    // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it
-    const res: Proposal = this.utils.getPolkaProposal(this.collectingPrecommits);
-    if (res) this.handlePolkaPrecommit(res);
+    if (!this.collectingPrecommits[msg.sender] && this.closedBlocks.length + 1 == msg.proposal.height) this.collectingPrecommits[msg.sender] = msg.proposal;
+    else this.log(`ignored message ${JSON.stringify(msg)}`);
+    if (this.inPreCommitStage) {
+      // maybe they are the last of the 2f+1 validators to get the proposal, in which this case they have seen a polka and handle it
+      const res: Proposal = this.utils.getPolkaProposal(this.collectingPrecommits);
+      if (res) this.handlePolkaPrecommit(res);
+      else {
+        this.log(`No polka for precommit`);
+        this.utils.printProposals(this.collectingPrecommits);
+      }
+    }
     return;
   }
 
@@ -106,20 +125,35 @@ export default class HonestNode extends BaseNode {
       this.beginNewRound(this.roundNumber + 1);
     }
     else {
-      this.closedBlocks.push(proposal.block);
+      const closedBlockMsg: Message = { type: "closedBlockMessage", sender: this.nodeNumber, proposal: proposal };
+      this.handleClosedBlockMessage(closedBlockMsg);
+    }
+    return;
+  }
+
+  @bind
+  handleClosedBlockMessage(msg: Message): void {
+    if ((this.closedBlocks.length + 1 == msg.proposal.height)) {
+      this.closedBlocks.push(msg.proposal.block);
+      this.broadcast(msg);
       this.beginNewRound(0);
     }
+    else this.log(`ignored message ${JSON.stringify(msg)}`);
     return;
   }
 
   @bind
   beginNewRound(roundNumber: number): void {
     // begin new round of voting
-    this.log(`beginning new round ${roundNumber}`);
+    this.log(`beginning new round ${roundNumber} at height ${this.closedBlocks.length + 1 }`);
+    // giving leader time to propose and close a block
+    this.setTimeout(PROPOSAL_STUCK_TIMEOUT_MS, <Message>{ type: "ProposalStuckTimeout", round: this.roundNumber });
     this.roundNumber = roundNumber;
     this.lockedProposal = undefined;
     this.collectingPrevotes = [];
     this.collectingPrecommits = [];
+    this.inPrevoteStage = false;
+    this.inPreCommitStage = false;
     if (this.nodeOrder[this.roundNumber] == this.nodeNumber) {
       this.startClosingNextUnconfirmedBlock();
     }
@@ -170,6 +204,7 @@ export default class HonestNode extends BaseNode {
     // prevote-the-lock: if node is locked on a block they must prevote for it TODO  and only it??
     if (this.lockedProposal) {
       if (!this.utils.isBlockEqual(prpsMsg.proposal.block, this.lockedProposal.block)) {
+        this.log(`Locked on previous precommitted proposal ${this.lockedProposal.proposalID} with block {${this.lockedProposal.block.blockNumber}, ${this.lockedProposal.block.content}, different from ${prpsMsg.proposal.proposalID} with block {${prpsMsg.proposal.block.blockNumber}, ${prpsMsg.proposal.block.content}}`);
         return false;
       }
     }
@@ -199,6 +234,7 @@ export default class HonestNode extends BaseNode {
   @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
+    this.log(`Received ${JSON.stringify(msg)}`);
     switch (msg.type) {
       case "ProposeBlock": {
         this.handleProposeBlock(msg);
@@ -210,6 +246,10 @@ export default class HonestNode extends BaseNode {
       }
       case "PrecommitMessage": {
         this.handlePrecommitMessage(msg);
+        break;
+      }
+      case "closedBlockMessage": {
+        this.handleClosedBlockMessage(msg);
         break;
       }
     }
