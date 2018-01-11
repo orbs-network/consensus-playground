@@ -51,7 +51,7 @@ export class Utils {
 
   @bind
   isProposalEqual(proposal1: Proposal, proposal2: Proposal): boolean {
-    if (this.isBlockEqual(proposal1.block, proposal2.block)) return false;
+    if (!this.isBlockEqual(proposal1.block, proposal2.block)) return false;
     if (proposal1.height != proposal2.height) return false;
     if (proposal1.proposerID != proposal2.proposerID) return false;
     return (proposal1.round == proposal2.round);
@@ -110,5 +110,16 @@ export class Utils {
       }
     }
     return undefined;
+  }
+
+  @bind
+  printProposals(proposalArray: Proposal[]): void {
+    const proposals: number[] = [];
+    for (const i in proposalArray) {
+      if (proposalArray[i]) {
+        proposals[i] = proposalArray[i].proposalID;
+      }
+    }
+    console.log(proposals);
   }
 }
