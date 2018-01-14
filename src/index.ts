@@ -12,6 +12,7 @@ function showUsage() {
   }
   console.log();
   console.log(`Usage 2: node dist benchmark`);
+  console.log(`Will run all algorithms in algorithms folder that begin with [a-z], use this to ignore algorithms (by appending '_' to the beginning for example).`);
   console.log();
   console.log(`Usage 3: node dist visualize <interval-ms> <scenario> [random-seed]`);
   console.log();

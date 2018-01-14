@@ -29,7 +29,7 @@ for (const file of shell.ls("-d", "src/benchmark/scenarios/*")) {
   const Scenario = loadScenario(scenarioName);
   output.startScenario(scenarioName);
   console.log(`\n${scenarioName}\n`);
-  for (const file of shell.ls("-d", "src/algorithms/*")) {
+  for (const file of shell.ls("-d", "src/algorithms/[a-z]*")) {
     const algorithmName = file.slice("src/algorithms/".length);
     console.log(`\n${algorithmName}\n`);
     const Node = loadHonestNode(algorithmName);
