@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import BaseNode from "./BaseNode";
 import BaseScenario from "./BaseScenario";
+import Endpoint from "./Endpoint";
 
 interface RecordedMessagesInInterval {
   activeConnections: {[from: number]: {[to: number]: boolean}};
@@ -26,7 +27,7 @@ export default class Statistics {
     return Math.floor(timestamp / this.shouldRecordMessagesByInterval);
   }
 
-  recordActiveConnection(timestamp: number, from: BaseNode, to: BaseNode, message: any): void {
+  recordActiveConnection(timestamp: number, from: Endpoint, to: Endpoint, message: any): void {
     if (this.shouldRecordMessagesByInterval === -1) return;
     const intervalIndex = this.getIntervalIndexForTimestamp(timestamp);
     if (!this.recordedMessagesByInterval[intervalIndex]) {

@@ -24,9 +24,6 @@ export default class RandomDelayAndPacketLoss extends BaseConnection {
     const event = new MessageEvent(timestamp, this.to, message);
     this.scenario.postEvent(event);
     this.scenario.statistics.recordActiveConnection(timestamp, this.from, this.to, message);
-    if (this.to_log) {
-      this.from.log(`Sending ${JSON.stringify(message)}`);
-    }
   }
 
 }

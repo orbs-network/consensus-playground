@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import BaseConnection from "./BaseConnection";
 import BaseScenario from "./BaseScenario";
+import Endpoint from "./Endpoint";
 import BaseEvent from "./BaseEvent";
 import NodeStartEvent from "./events/NodeStartEvent";
 import MessageEvent from "./events/MessageEvent";
@@ -8,7 +9,8 @@ import TimeoutEvent from "./events/TimeoutEvent";
 import * as colors from "colors";
 import bind from "bind-decorator";
 
-export default abstract class BaseNode {
+
+export default abstract class BaseNode implements Endpoint {
   public outgoingConnections: BaseConnection[] = [];
   public nodeNumber: number;
   protected scenario: BaseScenario;
