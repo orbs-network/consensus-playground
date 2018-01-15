@@ -3,6 +3,7 @@ import BaseConnection from "./BaseConnection";
 import BaseScenario from "./BaseScenario";
 import Endpoint from "./Endpoint";
 import BaseEvent from "./BaseEvent";
+import Logger from "./Logger";
 import NodeStartEvent from "./events/NodeStartEvent";
 import MessageEvent from "./events/MessageEvent";
 import TimeoutEvent from "./events/TimeoutEvent";
@@ -15,11 +16,13 @@ export default abstract class BaseNode implements Endpoint {
   public nodeNumber: number;
   protected scenario: BaseScenario;
   protected static numNodes = 0;
+  protected logger: Logger;
 
   constructor(scenario: BaseScenario) {
     this.scenario = scenario;
     BaseNode.numNodes++;
     this.nodeNumber = BaseNode.numNodes;
+    this.logger = new Logger(`Node ${this.nodeNumber}`, this.scenario);
   }
 
   onStart(event: NodeStartEvent): void {}
@@ -82,22 +85,17 @@ export default abstract class BaseNode implements Endpoint {
 
   @bind
   log(str: string): void {
-    const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
-    console.log(`[${timestamp}] Node ${this.nodeNumber}: ${str}`);
+    this.logger.log(`${str}`);
   }
 
   @bind
   warn(str: string): void {
-    const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
-    console.log(colors.yellow.bold(`[${timestamp}] WARNING! Node ${this.nodeNumber}: ${str}`));
-    this.scenario.statistics.totalWarnings++;
+    this.logger.warn(`${str}`);
   }
 
   @bind
   error(str: string): void {
-    const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
-    console.log(colors.red.bold(`[${timestamp}] ERROR! Node ${this.nodeNumber}: ${str}`));
-    this.scenario.statistics.totalErrors++;
+    this.logger.error(`${str}`);
   }
 
 }
