@@ -7,7 +7,7 @@ import bind from "bind-decorator";
 
 const NUM_NODES = 5;
 const NETWORK_DELAY_MS = 50;
-const MAX_SIMULATION_TIMESTAMP_MS = 100000;
+const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 
 export default class Scenario extends BaseScenario {
 
