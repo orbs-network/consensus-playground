@@ -3,7 +3,7 @@ import * as colors from "colors";
 import * as _ from "lodash";
 import bind from "bind-decorator";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default class Logger {
   protected loggerIdString: string;

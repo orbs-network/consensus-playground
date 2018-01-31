@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Utils, Block, Proposal, Message } from "./common";
+import { Utils, Block, Message, F } from "./common";
 import { Blockchain } from "./Blockchain";
 import { Mempool } from "./Mempool";
 import { Decryptor } from "./Decryptor";
@@ -11,6 +11,7 @@ import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 
 import BaseNode from "../../simulation/BaseNode";
+import BaseScenario from "../../simulation/BaseScenario";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
@@ -24,33 +25,48 @@ export default class HonestNode extends BaseNode {
   protected blockchain: Blockchain;
   protected decryptor: Decryptor;
   protected consensusEngine: ConsensusEngine;
-  protected netInterface: NetworkInterface;
   protected mempoolHandler: MempoolHandler;
   protected blockchainHandler: BlockchainHandler;
   protected consensusHandler: ConsensusHandler;
+  protected cryptoHandler: CryptoHandler;
+  public netInterface: NetworkInterface;
 
   protected utils: Utils;
 
+  constructor(scenario: BaseScenario) {
+    super(scenario);
+    this.utils = new Utils(this.scenario.numNodes, this.scenario.numNodes, F, this.nodeNumber);
+    this.mempool = new Mempool(this.scenario.randomizer);
+    this.blockchain = new Blockchain();
 
-  // @bind
-  // setDefaultInitialOrder(): void {
-  //   const order: number[] = [];
-  //   for (let i = 1; i <= this.scenario.numNodes; i++) {
-  //     this.nodeOrder.push(i);
-  //   }
-  // }
+
+
+
+
+    this.decryptor = new Decryptor();
+    this.netInterface = new NetworkInterface(this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.nodeNumber, this.scenario, this.logger);
+    this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.logger);
+
+    this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
+    this.mempoolHandler = new MempoolHandler();
+    this.blockchainHandler = new BlockchainHandler();
+    this.cryptoHandler = new CryptoHandler();
+
+    this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain);
+
+
+
+
+  }
 
   @bind
   onStart(event: NodeStartEvent): void {
-    const order: number[] = [];
-    // this.setDefaultInitialOrder();
-    this.utils = new Utils(this.scenario.numNodes, this.nodeNumber);
-    this.mempool = new Mempool();
-    this.decryptor = new Decryptor();
-    this.blockchain = new Blockchain();
-    this.netInterface = new NetworkInterface();
-    this.consensusEngine = new ConsensusEngine(this.decryptor, this.blockchain, this.mempool, this.netInterface);
-    this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
+    this.logger.debug(`Starting...`);
+    this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
+    this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
+    this.utils.numByz = F;
+    this.blockchain.init(this.utils.numNodes);
+    this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz);
   }
 
   @bind
@@ -58,7 +74,7 @@ export default class HonestNode extends BaseNode {
     const msg = <Message>event.message;
     switch (msg.type) {
       case "ConsensusMessage": {
-        break;
+        this.consensusHandler.handleMessage(msg);
       }
       case "MempoolMessage": {
         break;
@@ -86,13 +102,23 @@ export default class HonestNode extends BaseNode {
   }
 
   @bind
+  broadcast(message: any): void {
+    this.netInterface.broadcast(message);
+  }
+
+  @bind
+  unicast(toNodeNumber: number, message: any): void {
+    this.netInterface.unicast(toNodeNumber, message);
+  }
+
+  @bind
   benchmarkGetClosedBlocks(): Block[] {
-    return undefined;
+    return this.blockchain.getClosedBlocks();
   }
 
   @bind
   benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
-    return block1.content == block2.content;
+    return block1.decryptedBlock.content == block2.decryptedBlock.content;
   }
 
 }
