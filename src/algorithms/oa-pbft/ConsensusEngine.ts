@@ -51,7 +51,6 @@ export class ConsensusEngine {
     this.mempool = mempool;
     this.netInterface = netInterface;
 
-    this.numNodes = undefined; // to be set upon consensus initialization
     this.phase = undefined;
     this.term = 0;
     this.logger = logger;
@@ -88,7 +87,8 @@ export class ConsensusEngine {
   }
 
  /**
-  *
+  * Begin new instance of PBFT for a new block-height, with the a new committee set  according to the last decrypted block.
+  * @param lastDBlock - The decrypted block of the previous round
   */
   @bind
   enterNewTerm(lastDBlock: DecryptedBlock): void {
@@ -176,7 +176,7 @@ export class ConsensusEngine {
 
   @bind
   createNewBP(): BlockProof {
-    const blockProof: BlockProof = { term: this.term, hash: undefined, prepares: new Array(this.numNodes).fill(false), commits: new Array(this.numNodes).fill(false), committed: false };
+    const blockProof: BlockProof = { term: this.term, hash: undefined, prepares: new Array(this.utils.numNodes).fill(false), commits: new Array(this.utils.numNodes).fill(false), committed: false };
     blockProof.committed = false;
     return blockProof;
 
