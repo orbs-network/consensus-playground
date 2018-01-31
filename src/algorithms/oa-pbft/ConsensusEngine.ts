@@ -134,8 +134,10 @@ export class ConsensusEngine {
 
   @bind
   isInSyncMessage(msg: Message): boolean {
-    if ( !(msg.term == this.term) || !(msg.view == this.pbftState.view) ) {
+    if (msg.term < this.term) return false; // ignore messages from the past
+    if ( (msg.term > this.term) || !(msg.view == this.pbftState.view) ) {
       this.logger.debug(`Received message with term ${msg.term}, expected ${this.term}, and with view ${msg.view}, expected ${this.pbftState.view}.`);
+      this.logger.debug(`Message is ${JSON.stringify(msg)}`);
       return false;
     }
 
@@ -211,7 +213,7 @@ export class ConsensusEngine {
     }
     const ebHash = (conMsgType == ConsensusMessageType.PrePrepare) ? msg.eBlock.hash : msg.eBlockHash;
     if (this.pbftState.candidateEBlock && !this.isValidEBlock(ebHash)) {
-      // this.logger.debug(`Invalid Eblock (${ebHash})`);
+      this.logger.debug(`Invalid Eblock (${ebHash}), msg=${JSON.stringify(msg)}`);
       return false;
     }
     // this.logger.debug(`VALID Eblock`);
@@ -253,9 +255,18 @@ export class ConsensusEngine {
     }
     this.logger.debug(`Received pre-prepare message for block (${msg.eBlock.term},${msg.eBlock.hash}) from ${msg.sender}`);
     this.pbftState.candidateEBlock = msg.eBlock;
+
     const prepareMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
-    this.broadcastCommittee(prepareMsg);
+
     this.handlePrepareMessage(prepareMsg);
+
+    if (!this.utils.isLeader(this.cmap, this.nodeNumber)) { // shortcut, committee members that receive pre-prepare should generate the corresponding prepare msg from the leader
+    // and save bandwidth (the leader doesn't need to send another prepare message after the preprepare)
+      const leaderPrepareMsg: Message = { sender: msg.sender, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
+      this.updateEvidence(leaderPrepareMsg);
+      this.broadcastCommittee(prepareMsg);
+    }
+
 
     return;
 
