@@ -30,6 +30,7 @@ export interface PBFTState {
   committedLocal: boolean;
   blockProof: BlockProof;
   viewChangeMessages: Message[];
+  collectingViewChangeMsgs: boolean;
 }
 
 
@@ -128,7 +129,7 @@ export class ConsensusEngine {
     if (this.pbftState) this.logger.debug(`Initializing PBFT state, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
     const futureMsgs = (this.pbftState) ? this.pbftState.outOfSyncMessages.filter( msg => msg.term > this.term) : [] ;
     this.logger.debug(`Initializing PBFT state, future messages are ${JSON.stringify(futureMsgs)}`);
-    this.pbftState = { view: 1, candidateEBlock: undefined, outOfSyncMessages: futureMsgs, prepMessages: [], commitMessages: [], prepared: false, committedLocal: false, blockProof: this.createNewBP(), viewChangeMessages: new Array(this.utils.numNodes).fill(undefined) };
+    this.pbftState = { view: 1, candidateEBlock: undefined, outOfSyncMessages: futureMsgs, prepMessages: [], commitMessages: [], prepared: false, committedLocal: false, blockProof: this.createNewBP(), viewChangeMessages: new Array(this.utils.numNodes).fill(undefined), collectingViewChangeMsgs: false };
 
   }
 
@@ -208,12 +209,15 @@ export class ConsensusEngine {
   }
 
   @bind
-  isValidByzMajorityVote(voteArr: boolean[]): boolean {
+  isValidByzMajorityVote(voteArr: any[]): boolean { // any to allow use with arrays of objects as well
     return Utils.isAByzMajOfB(this.countValidVotes(voteArr), this.utils.committeeSize);
   }
 
   @bind
   isValidConMsg(msg: Message, conMsgType: ConsensusMessageType): boolean {
+    if (!this.utils.isCommitteeMember(this.cmap, msg.sender)) {
+      this.logger.warn(`Got message from non-committee member ${msg.sender}, committee is ${this.utils.getCommittee(this.cmap)}`);
+    }
     if (msg.conMsgType != conMsgType) {
       this.logger.debug(`Expected message of type ${conMsgType}, got message of type ${msg.conMsgType}`);
       return false;
@@ -242,6 +246,10 @@ export class ConsensusEngine {
       }
       case ConsensusMessageType.PrePrepare: {
         this.handlePrePrepareMessage(msg);
+        break;
+      }
+      case ConsensusMessageType.ViewChange: {
+        this.pbftState.viewChangeMessages[msg.sender - 1] = msg;
         break;
       }
     }
@@ -430,28 +438,58 @@ export class ConsensusEngine {
   @bind
   handleProposalExpiredTimeout(): void {
     this.logger.log(`Timeout expired for current proposal (term = ${this.term}, view = ${this.pbftState.view})!`);
+    this.enterNewView();
+
+  }
+
+  @bind
+  enterNewView(): void {
     this.timer.setProposalTimer(Math.pow(2, this.pbftState.view) * PROPOSAL_TIMER_MS);
     let proposal: Proposal = undefined;
     if (this.pbftState.prepared) {
       if (!this.isValidByzMajorityVote(this.pbftState.blockProof.prepares)) this.logger.error(`In prepared state but don't have 2f+1 prepare messages!`);
       proposal = { term: this.term, view: this.pbftState.view, candidateEBlock: this.pbftState.candidateEBlock, prepMessages: this.pbftState.prepMessages };
     }
-
     this.pbftState.view += 1; // update view, move to next leader
     const nextLeader = this.utils.getLeader(this.cmap, this.pbftState.view);
     if (!nextLeader) this.logger.error(`No valid leader available!`);
     const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) this.netInterface.unicast(nextLeader, viewChangeMessage);
     else this.handleViewChangeMessage(viewChangeMessage); // I'm the new leader, don't need to unicast message to myself
-
+    this.pbftState.viewChangeMessages = []; // initialize viewchange messages for new view TODO check that this is the desired behavior
+    this.pbftState.collectingViewChangeMsgs = false;
   }
 
   @bind
   handleViewChangeMessage(msg: Message): void {
+    // TODO validate message- check from committee, that prepares match the EB
+    // check I'm in sync i.e the following two hold:
+    // 1. on same term as sender of view change msg
+    // 2. on either same view or one behind.
+    if ( (this.term != msg.term) || !((this.pbftState.view == msg.view) || ((this.pbftState.view + 1) == msg.view)) ) {
+      // TODO need to sync?
+      this.logger.warn(`Out of sync: Committee thinks I'm new leader, getting messages with term,view (${msg.term},${msg.view}) but I'm at (${this.term},${this.pbftState.view})`);
+      return;
+    }
+
     this.logger.debug(`Recieved ViewChange message ${JSON.stringify(msg)}`);
-    // TODO implement
+    this.updateEvidence(msg);
+    // if (this.pbftState.collectingViewChangeMsgs) {
+    //   if (this.isValidByzMajorityVote(this.pbftState.viewChangeMessages)) {
+    //     this.pbftState.collectingViewChangeMsgs = false;
+    //
+    //   }
+    //   else this.pbftState.collectingViewChangeMsgs = true;
+    //
+    // }
 
 
+
+  }
+
+  @bind
+  enterPrimaryChangeTakeover() {
+    this.logger.log(`Received majority of ${this.countValidVotes(this.pbftState.viewChangeMessages)} votes out of ${this.utils.committeeSize}, entering new view.`);
   }
 
 
