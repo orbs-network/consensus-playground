@@ -1,14 +1,17 @@
 import * as _ from "lodash";
-import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType } from "./common";
+import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal } from "./common";
 import * as Common from "./common";
 import Logger from "../../simulation/Logger";
 import { Blockchain } from "./Blockchain";
 import { Decryptor } from "./Decryptor";
 import { Mempool } from "./Mempool";
+import { Timer } from "./Timer";
 import { NetworkInterface } from "./NetworkInterface";
 
 
 import bind from "bind-decorator";
+
+const PROPOSAL_TIMER_MS = 2000;
 
 enum Phase { // not used yet
     Agreeing,
@@ -26,7 +29,10 @@ export interface PBFTState {
   prepared: boolean;
   committedLocal: boolean;
   blockProof: BlockProof;
+  viewChangeMessages: Message[];
 }
+
+
 
 export class ConsensusEngine {
   protected nodeNumber: number;
@@ -35,6 +41,7 @@ export class ConsensusEngine {
   protected blockchain: Blockchain;
   protected mempool: Mempool;
   protected netInterface: NetworkInterface;
+  protected timer: Timer;
 
   protected cmap: Cmap;
   protected term: number;
@@ -44,12 +51,13 @@ export class ConsensusEngine {
   protected logger: Logger;
   protected utils: Utils;
 
-  constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, logger: Logger = undefined) {
+  constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, logger: Logger = undefined, timer: Timer = undefined) {
     this.nodeNumber = nodeNumber;
     this.decryptor = decryptor;
     this.blockchain = blockchain;
     this.mempool = mempool;
     this.netInterface = netInterface;
+    this.timer = timer;
 
     this.phase = undefined;
     this.term = 0;
@@ -96,10 +104,9 @@ export class ConsensusEngine {
     this.cmap = this.sortition(lastDBlock);
     this.initPBFT_State();
     this.term += 1;
-
+    this.timer.setProposalTimer(PROPOSAL_TIMER_MS); // TODO also leader or just committee?
     this.logger.log(`Entering term ${this.term}`);
-    if (this.utils.isLeader(this.cmap, this.nodeNumber)) {
-      // TODO set timeout?
+    if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
       this.logger.log(`Chosen as leader, committee is ${this.utils.getCommittee(this.cmap)}`);
       this.phase = Phase.Agreeing;
       const eBlock: EncryptedBlock = this.createNewEBlock();
@@ -121,7 +128,7 @@ export class ConsensusEngine {
     if (this.pbftState) this.logger.debug(`Initializing PBFT state, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
     const futureMsgs = (this.pbftState) ? this.pbftState.outOfSyncMessages.filter( msg => msg.term > this.term) : [] ;
     this.logger.debug(`Initializing PBFT state, future messages are ${JSON.stringify(futureMsgs)}`);
-    this.pbftState = { view: 1, candidateEBlock: undefined, outOfSyncMessages: futureMsgs, prepMessages: [], commitMessages: [], prepared: false, committedLocal: false, blockProof: this.createNewBP() };
+    this.pbftState = { view: 1, candidateEBlock: undefined, outOfSyncMessages: futureMsgs, prepMessages: [], commitMessages: [], prepared: false, committedLocal: false, blockProof: this.createNewBP(), viewChangeMessages: new Array(this.utils.numNodes).fill(undefined) };
 
   }
 
@@ -185,7 +192,7 @@ export class ConsensusEngine {
   }
 
   @bind
-  countValidVotes(voteArr: boolean[]): number {
+  countValidVotes(voteArr: any[]): number { // support array of booleans or general objects
     let count = 0;
     for (let i = 0; i < voteArr.length; i++) {
       if (voteArr[i]) {
@@ -260,7 +267,7 @@ export class ConsensusEngine {
 
     this.handlePrepareMessage(prepareMsg);
 
-    if (!this.utils.isLeader(this.cmap, this.nodeNumber)) { // shortcut, committee members that receive pre-prepare should generate the corresponding prepare msg from the leader
+    if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) { // shortcut, committee members that receive pre-prepare should generate the corresponding prepare msg from the leader
     // and save bandwidth (the leader doesn't need to send another prepare message after the preprepare)
       const leaderPrepareMsg: Message = { sender: msg.sender, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
       this.updateEvidence(leaderPrepareMsg);
@@ -418,6 +425,33 @@ export class ConsensusEngine {
     this.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
     this.blockchain.addBlock(this.createBlock(eBlock, dBlock, this.pbftState.blockProof));
     this.enterNewTerm(dBlock);
+  }
+
+  @bind
+  handleProposalExpiredTimeout(): void {
+    this.logger.log(`Timeout expired for current proposal (term = ${this.term}, view = ${this.pbftState.view})!`);
+    this.timer.setProposalTimer(Math.pow(2, this.pbftState.view) * PROPOSAL_TIMER_MS);
+    let proposal: Proposal = undefined;
+    if (this.pbftState.prepared) {
+      if (!this.isValidByzMajorityVote(this.pbftState.blockProof.prepares)) this.logger.error(`In prepared state but don't have 2f+1 prepare messages!`);
+      proposal = { term: this.term, view: this.pbftState.view, candidateEBlock: this.pbftState.candidateEBlock, prepMessages: this.pbftState.prepMessages };
+    }
+
+    this.pbftState.view += 1; // update view, move to next leader
+    const nextLeader = this.utils.getLeader(this.cmap, this.pbftState.view);
+    if (!nextLeader) this.logger.error(`No valid leader available!`);
+    const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
+    if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) this.netInterface.unicast(nextLeader, viewChangeMessage);
+    else this.handleViewChangeMessage(viewChangeMessage); // I'm the new leader, don't need to unicast message to myself
+
+  }
+
+  @bind
+  handleViewChangeMessage(msg: Message): void {
+    this.logger.debug(`Recieved ViewChange message ${JSON.stringify(msg)}`);
+    // TODO implement
+
+
   }
 
 

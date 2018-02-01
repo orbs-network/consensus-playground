@@ -2,6 +2,7 @@ import * as _ from "lodash";
 import { Utils, Block, Message, F } from "./common";
 import { Blockchain } from "./Blockchain";
 import { Mempool } from "./Mempool";
+import { Timer } from "./Timer";
 import { Decryptor } from "./Decryptor";
 import { ConsensusEngine } from "./ConsensusEngine";
 import { NetworkInterface } from "./NetworkInterface";
@@ -29,6 +30,7 @@ export default class HonestNode extends BaseNode {
   protected blockchainHandler: BlockchainHandler;
   protected consensusHandler: ConsensusHandler;
   protected cryptoHandler: CryptoHandler;
+  protected timer: Timer;
   public netInterface: NetworkInterface;
 
   protected utils: Utils;
@@ -38,21 +40,18 @@ export default class HonestNode extends BaseNode {
     this.utils = new Utils(this.scenario.numNodes, this.scenario.numNodes, F, this.nodeNumber);
     this.mempool = new Mempool(this.scenario.randomizer);
     this.blockchain = new Blockchain();
-
-
-
-
+    this.timer = new Timer();
 
     this.decryptor = new Decryptor();
     this.netInterface = new NetworkInterface(this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.nodeNumber, this.scenario, this.logger);
-    this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.logger);
+    this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.logger, this.timer);
 
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
     this.blockchainHandler = new BlockchainHandler();
     this.cryptoHandler = new CryptoHandler();
 
-    this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain);
+
 
 
 
@@ -66,6 +65,8 @@ export default class HonestNode extends BaseNode {
     this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
     this.utils.numByz = F;
     this.blockchain.init(this.utils.numNodes);
+    this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain);
+    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
     this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz);
   }
 
@@ -91,14 +92,13 @@ export default class HonestNode extends BaseNode {
 
   @bind
   onTimeout(event: TimeoutEvent): void {
-    const msg = <Message>event.message;
-    switch (msg.type) {
+    // this.time
 
-      case "ProposalStuckTimeout": {
+  }
 
-        break;
-      }
-    }
+  @bind
+  setTimeout(timeoutMs: number, message: any): void {
+    this.timer.setTimeout(timeoutMs, message);
   }
 
   @bind
