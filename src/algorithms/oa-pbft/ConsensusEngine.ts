@@ -289,8 +289,7 @@ export class ConsensusEngine {
     this.updateEvidence(msg);
 
     this.logger.debug(`Received ${this.countValidVotes(this.pbftState.blockProof.prepares)} votes out of ${this.pbftState.blockProof.prepares.length}, is ${this.pbftState.blockProof.prepares}`);
-    // TODO move this to block proof
-    if (this.isValidByzMajorityVote(this.pbftState.blockProof.prepares) && this.pbftState.candidateEBlock) {
+    if (this.isValidByzMajorityVote(this.pbftState.blockProof.prepares) && this.pbftState.candidateEBlock && !this.pbftState.prepared) {
       this.enterPrepared();
 
     }
