@@ -10,11 +10,14 @@ const BYZ_MAJORITY = 2.0 / 3.0;
 
 const HASH_LENGTH = 8; // pseudo hash representing block hash
 
+const NO_LEADER_ERROR = 0;
+
 export enum ConsensusMessageType {
   PrePrepare,
   Prepare,
   Commit,
-  Committed
+  Committed,
+  ViewChange
 }
 
 
@@ -65,6 +68,12 @@ export interface Block {
   // TODO add shares
 }
 
+export interface Proposal {
+  term: number;
+  view: number;
+  candidateEBlock: EncryptedBlock;
+  prepMessages: Message[];
+}
 
 export interface Message {
   type: string;
@@ -77,6 +86,7 @@ export interface Message {
   dBlock?: DecryptedBlock;
   conMsgType?: ConsensusMessageType;
   blockProof?: BlockProof;
+  proposal?: Proposal;
 }
 
 export class Utils {
@@ -126,13 +136,19 @@ export class Utils {
   }
 
   @bind
+  getLeader(cmap: Cmap, view: number): number {
+    if (view < cmap.order.length) return cmap.order[view];
+    else return NO_LEADER_ERROR;
+  }
+
+  @bind
   isCommitteeMember(cmap: Cmap, nodeNumber: number): boolean {
     return ( (cmap.order.indexOf(nodeNumber) >= 0) && (cmap.order.indexOf(nodeNumber) < this.committeeSize) );
   }
 
   @bind
-  isLeader(cmap: Cmap, nodeNumber: number): boolean {
-    return ( cmap.order.length > 0 && cmap.order[0] == nodeNumber );
+  isLeader(cmap: Cmap, nodeNumber: number, view: number): boolean {
+    return ( cmap.order.length > 0 && cmap.order[view - 1] == nodeNumber );
   }
 
   @bind
