@@ -10,14 +10,14 @@ const BYZ_MAJORITY = 2.0 / 3.0;
 
 const HASH_LENGTH = 8; // pseudo hash representing block hash
 
-const NO_LEADER_ERROR = 0;
 
 export enum ConsensusMessageType {
   PrePrepare,
   Prepare,
   Commit,
   Committed,
-  ViewChange
+  ViewChange,
+  NewView
 }
 
 
@@ -87,6 +87,9 @@ export interface Message {
   conMsgType?: ConsensusMessageType;
   blockProof?: BlockProof;
   proposal?: Proposal;
+  viewChangeMsgs?: Message[];
+  newPrePrepMsg?: Message;
+
 }
 
 export class Utils {
@@ -137,8 +140,7 @@ export class Utils {
 
   @bind
   getLeader(cmap: Cmap, view: number): number {
-    if (view < cmap.order.length) return cmap.order[view];
-    else return NO_LEADER_ERROR;
+    return cmap.order[(view - 1) % this.committeeSize];
   }
 
   @bind
@@ -148,8 +150,9 @@ export class Utils {
 
   @bind
   isLeader(cmap: Cmap, nodeNumber: number, view: number): boolean {
-    return ( cmap.order.length > 0 && cmap.order[view - 1] == nodeNumber );
+    return ( this.getLeader(cmap, view) == nodeNumber );
   }
+
 
   @bind
   areCmapsEqual(cmap1: Cmap, cmap2: Cmap): boolean {

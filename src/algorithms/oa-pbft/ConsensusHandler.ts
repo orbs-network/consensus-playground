@@ -34,6 +34,14 @@ export class ConsensusHandler {
         this.consensusEngine.handleCommittedMessage(msg);
         break;
       }
+      case ConsensusMessageType.ViewChange: {
+        this.consensusEngine.handleViewChangeMessage(msg);
+        break;
+      }
+      case ConsensusMessageType.NewView: {
+        this.consensusEngine.handleNewViewMessage(msg);
+        break;
+      }
 
     }
     return;
