@@ -70,6 +70,11 @@ export class ConsensusEngine {
 
   }
 
+  @bind
+  getTerm(): number {
+    return this.term;
+  }
+
  /**
   * Given previous block, output new ordering and (future) reputation updates
   * @param block - Decrypted block to generate new Cmap from
