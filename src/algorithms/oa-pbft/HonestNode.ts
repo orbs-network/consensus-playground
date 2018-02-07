@@ -37,7 +37,7 @@ export default class HonestNode extends BaseNode {
 
   constructor(scenario: BaseScenario) {
     super(scenario);
-    this.utils = new Utils(this.scenario, this.nodeNumber);
+    this.utils = new Utils(this.scenario, this.nodeNumber, this.logger);
     this.mempool = new Mempool(this.scenario.randomizer);
     this.blockchain = new Blockchain();
     this.timer = new Timer();
@@ -65,7 +65,7 @@ export default class HonestNode extends BaseNode {
     this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
     this.utils.numByz = F;
     this.blockchain.init(this.utils.numNodes);
-    this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain);
+    this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
     this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
     this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz);
   }

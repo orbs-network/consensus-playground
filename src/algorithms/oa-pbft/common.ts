@@ -2,6 +2,7 @@ import * as _ from "lodash";
 import bind from "bind-decorator";
 import Random from "../../simulation/Random";
 import BaseScenario from "../../simulation/BaseScenario";
+import Logger from "../../simulation/Logger";
 
 // export const N = 5; // number of nodes in the system
 // export const M = (3 * F) + 1; // committee size
@@ -90,7 +91,14 @@ export interface Message {
   proposal?: Proposal;
   viewChangeMsgs?: Message[];
   newPrePrepMsg?: Message;
+  blockShare?: BlockShare;
 
+}
+
+export interface BlockShare {
+  blockHash: string;
+  term: number;
+  nodeNumber: number;
 }
 
 export class Utils {
@@ -98,14 +106,17 @@ export class Utils {
   public numNodes: number; // n
   public committeeSize: number; // m
   public numByz: number; // f
-  protected nodeNumber: number;
+  public nodeNumber: number;
+  public k: number;
+  public logger: Logger;
 
-  constructor(scenario: BaseScenario, nodeNumber: number) {
+  constructor(scenario: BaseScenario, nodeNumber: number, logger: Logger) {
     this.scenario = scenario;
     this.numNodes = scenario.numNodes;
     this.committeeSize = this.numNodes; // TODO could also be in scenario
     this.numByz = F;
     this.nodeNumber = nodeNumber;
+    this.logger = logger;
   }
 
   static hashContent(content: number): string {
