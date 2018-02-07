@@ -1,5 +1,5 @@
 import HonestNode from "./HonestNode";
 import FaultyNode from "./FaultyNode";
-// import { N } from "./common";
+import FaultyPreparedNode from "./FaultyPreparedNode";
 
-export { HonestNode, FaultyNode };
+export { HonestNode, FaultyNode, FaultyPreparedNode };

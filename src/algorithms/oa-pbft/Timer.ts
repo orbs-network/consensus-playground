@@ -41,6 +41,16 @@ export class Timer implements Endpoint {
     this.scenario.postEvent(event);
   }
 
+  @bind
+  setWakeupTimer(duration: number): void {
+    const proposalTimeoutMsg = { sender: this.nodeNumber, type: "SleepTimeoutExpired" };
+    const timestamp = this.scenario.currentTimestamp + duration;
+    this.logger.log(`Setting sleep timer to expire at ${timestamp}...`);
+    const event = new TimeoutEvent(timestamp, this, proposalTimeoutMsg);
+    this.proposalTimeoutEvent = event;
+    this.scenario.postEvent(event);
+  }
+
   // TODO probably don't need this
   @bind
   setTimeout(timeoutMs: number, message: any): void {
@@ -64,6 +74,10 @@ export class Timer implements Endpoint {
         // if this is an old timer expiring we ignore it. Ideally, we would have removed the old event
         // from the scenario event queue but the PriorityQueue api doesn't support this.
         if (this.proposalTimeoutEvent.isSameEvent(event)) this.consensusEngine.handleProposalExpiredTimeout();
+        break;
+      }
+      case "SleepTimeoutExpired": {
+        this.consensusEngine.handleSleepTimeoutExpired();
         break;
       }
     }

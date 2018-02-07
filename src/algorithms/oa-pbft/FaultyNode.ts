@@ -20,7 +20,10 @@ import NodeStartEvent from "../../simulation/events/NodeStartEvent";
 import bind from "bind-decorator";
 
 
-
+/**
+ * This node simply doesn't process Consensus Messages so it won't take part in
+ * the consensus process.
+ */
 export default class FaultyNode extends BaseNode {
   protected mempool: Mempool;
   protected blockchain: Blockchain;
@@ -37,7 +40,7 @@ export default class FaultyNode extends BaseNode {
 
   constructor(scenario: BaseScenario) {
     super(scenario);
-    this.utils = new Utils(this.scenario.numNodes, this.scenario.numNodes, F, this.nodeNumber);
+    this.utils = new Utils(this.scenario, this.nodeNumber);
     this.mempool = new Mempool(this.scenario.randomizer);
     this.blockchain = new Blockchain();
     this.timer = new Timer();

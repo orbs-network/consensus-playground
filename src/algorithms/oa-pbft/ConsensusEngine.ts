@@ -43,6 +43,7 @@ export class ConsensusEngine {
   protected mempool: Mempool;
   protected netInterface: NetworkInterface;
   protected timer: Timer;
+  protected sleeping: boolean = false;
 
   protected cmap: Cmap;
   protected term: number;
@@ -594,6 +595,17 @@ export class ConsensusEngine {
       this.enterPrepared();
 
     }
+  }
+
+  @bind
+  isSleeping(): boolean {
+    return this.sleeping;
+  }
+
+  @bind
+  handleSleepTimeoutExpired(): void {
+    this.logger.log(`Waking up!`);
+    this.sleeping = false;
   }
 
 

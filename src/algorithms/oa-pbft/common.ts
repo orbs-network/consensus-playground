@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 import bind from "bind-decorator";
 import Random from "../../simulation/Random";
+import BaseScenario from "../../simulation/BaseScenario";
 
 // export const N = 5; // number of nodes in the system
 // export const M = (3 * F) + 1; // committee size
@@ -93,15 +94,17 @@ export interface Message {
 }
 
 export class Utils {
+  public scenario: BaseScenario;
   public numNodes: number; // n
   public committeeSize: number; // m
   public numByz: number; // f
   protected nodeNumber: number;
 
-  constructor(numNodes: number, committeeSize: number, numByz: number, nodeNumber: number) {
-    this.numNodes = numNodes;
-    this.committeeSize = committeeSize;
-    this.numByz = numByz;
+  constructor(scenario: BaseScenario, nodeNumber: number) {
+    this.scenario = scenario;
+    this.numNodes = scenario.numNodes;
+    this.committeeSize = this.numNodes; // TODO could also be in scenario
+    this.numByz = F;
     this.nodeNumber = nodeNumber;
   }
 
