@@ -97,7 +97,7 @@ export class ConsensusEngine {
   }
 
  /**
-  * Begin new instance of PBFT for a new block-height, with the a new committee set  according to the last decrypted block.
+  * Begin new instance of PBFT for a new block-height, with the new committee set  according to the last decrypted block.
   * @param lastDBlock - The decrypted block of the previous round
   */
   @bind
@@ -121,7 +121,7 @@ export class ConsensusEngine {
     }
     else {
       this.phase = Phase.Waiting;
-      this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); //
+      this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); // sync on messages from previous term
     }
 
   }
@@ -142,6 +142,10 @@ export class ConsensusEngine {
     }
   }
 
+/**
+ * Check if message is in sync with node's current state - on same term and view, and * that if the message is a prepare or commit message, the corresponding pre-prepare message has already been seen.
+ * @param message - Some ConsensusMessage
+ */
   @bind
   isInSyncMessage(msg: Message): boolean {
     if (msg.term < this.term) return false; // ignore messages from the past
@@ -158,13 +162,14 @@ export class ConsensusEngine {
     return true;
   }
 
+
   @bind
   isValidEBlock(eBlockHash: string): boolean {
     if (eBlockHash != this.pbftState.candidateEBlock.hash) {
-      this.logger.debug(`Mismatching hash- receieved ${eBlockHash}, expected ${this.pbftState.candidateEBlock.hash}`); // TODO maybe warning? Depends on when can happen
+      this.logger.debug(`Mismatching hash- receieved ${eBlockHash}, expected ${this.pbftState.candidateEBlock.hash}`);
       return false;
     }
-    // to avoid boilerplate- assuming that eblock content matches hash
+    // to avoid boilerplate- assuming that eblock content matches hash TODO can add
     return true;
   }
 
@@ -193,9 +198,13 @@ export class ConsensusEngine {
     return blockProof;
 
   }
-
+  /**
+   * Given array of proposals or boolean indicator array, count number of votes. Assuming validity of the entries.
+   * @param VoteArr - array of booleans or general objects such as messages
+   * @return {number} - number of true/existing objects is returned
+   */
   @bind
-  countValidVotes(voteArr: any[]): number { // support array of booleans or general objects
+  countValidVotes(voteArr: any[]): number {
     let count = 0;
     for (let i = 0; i < voteArr.length; i++) {
       if (voteArr[i]) {
@@ -209,12 +218,19 @@ export class ConsensusEngine {
     }
     return count;
   }
-
+  /**
+   * Given array of proposals or boolean indicator array, check if votes constitute a
+   * 2/3+ majority. Assuming validity of the proposals.
+   * @param VoteArr - array of booleans or general objects
+   * @return {number} - number of true/existing objects is returned
+   */
   @bind
   isValidByzMajorityVote(voteArr: any[]): boolean { // any to allow use with arrays of objects as well
     return Utils.isAByzMajOfB(this.countValidVotes(voteArr), this.utils.committeeSize);
   }
-
+  /**
+   * Check if a message is a valid ConsensusMessage of the desired type.
+   */
   @bind
   isValidConMsg(msg: Message, conMsgType: ConsensusMessageType): boolean {
     if (!this.utils.isCommitteeMember(this.cmap, msg.sender)) {
@@ -229,10 +245,12 @@ export class ConsensusEngine {
       this.logger.debug(`Invalid Eblock (${ebHash}), msg=${JSON.stringify(msg)}`);
       return false;
     }
-    // this.logger.debug(`VALID Eblock`);
+
     return true;
   }
-
+  /**
+   * Record evidence according to type of message. Assuming message validity.
+   */
   @bind
   updateEvidence(msg: Message): void {
     switch (msg.conMsgType) {
@@ -257,13 +275,17 @@ export class ConsensusEngine {
     }
   }
 
+  /**
+   * Handle pre-prepare message. If valid, update candidate EB and
+   * broadcast prepare message to the committee.
+   */
   @bind
   handlePrePrepareMessage(msg: Message): void {
     if (!this.isInSyncMessage(msg)) {
       this.pbftState.outOfSyncMessages.push(msg);
       return;
     }
-    if (!msg.sender == this.cmap[this.pbftState.view]) {
+    if (!(msg.sender == this.utils.getLeader(this.cmap, this.pbftState.view))) {
       this.logger.warn(`Received pre-prepare message from ${msg.sender}, expected from ${this.cmap[this.pbftState.view]}`);
       return;
     }
@@ -282,19 +304,17 @@ export class ConsensusEngine {
       this.broadcastCommittee(prepareMsg);
     }
     this.handlePrepareMessage(prepareMsg);
-
-
-
-
     return;
-
   }
 
+  /**
+   * Handle prepare message. If valid, check if received 2f+1 messages needed to enter * Prepared state.
+   */
   @bind
   handlePrepareMessage(msg: Message): void {
     // TODO what about the case where we receive 2f+1 prepare messages before preprepare? A: can ask for the prepare message
     // TODO is there a case where we don't have our own prepare message?
-    this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); // check if maybe out of sync messages synced meanwhile
+    this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]);
     if (!this.isInSyncMessage(msg)) { // TODO move to consensus handler
       this.pbftState.outOfSyncMessages.push(msg);
       return;
@@ -302,24 +322,19 @@ export class ConsensusEngine {
     if (!this.isValidConMsg(msg, ConsensusMessageType.Prepare)) {
       return;
     }
-
-
     this.updateEvidence(msg);
-
     this.logger.debug(`Received ${this.countValidVotes(this.pbftState.blockProof.prepares)} votes out of ${this.pbftState.blockProof.prepares.length}, is ${this.pbftState.blockProof.prepares}, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
     if (this.isValidByzMajorityVote(this.pbftState.blockProof.prepares) && this.pbftState.candidateEBlock && !this.pbftState.prepared) {
       this.enterPrepared();
-
     }
-
-
-
   }
 
-
+  /**
+   * Process the out-of-sync messages, in case state changes have rendered some valid. * Validated messages will be removed from out-of-sync array.
+   * Done before checking for majority votes, so that most up-to-date information will * be taken into account.
+   */
   @bind
   recheckConMessages(cmTypeArray: ConsensusMessageType[]): void {
-    // this.logger.debug(`checking oos messages`);
     let allOutOfSyncMsgs = [];
     let allValidMsgs = [];
     for (const cmType of cmTypeArray) {
@@ -339,6 +354,9 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Enter Prepared stage- update state, broadcast a Commit message to the committee.
+   */
   @bind
   enterPrepared(): void {
     this.logger.log(`Entering Prepared stage.`);
@@ -349,6 +367,9 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Handle Commit message. If valid, check if received 2f+1 messages needed to enter * Committed state.
+   */
   @bind
   handleCommitMessage(msg: Message): void {
     this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); // check if maybe out of sync messages synced meanwhile
@@ -359,15 +380,16 @@ export class ConsensusEngine {
     if (!this.isValidConMsg(msg, ConsensusMessageType.Commit)) {
       return;
     }
-
     this.updateEvidence(msg);
     if (this.isValidByzMajorityVote(this.pbftState.blockProof.commits) && this.pbftState.prepared) {
       this.enterCommit();
-
     }
 
   }
 
+  /**
+   * Enter Committed state- update and propogate block proof along with corresponding * EncryptedBlock.
+   */
   @bind
   enterCommit(): void {
     this.logger.log(`Entering commit stage`);
@@ -376,6 +398,10 @@ export class ConsensusEngine {
     this.propagateBP(this.pbftState.blockProof, this.pbftState.candidateEBlock);
   }
 
+  /**
+   * Propogate block proof in the form of a CommittedMessage, using fast block
+   * propogation protocol (future)
+   */
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
     const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
