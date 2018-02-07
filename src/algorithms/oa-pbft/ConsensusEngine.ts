@@ -462,7 +462,7 @@ export class ConsensusEngine {
     this.pbftState.view += 1; // update view, move to next leader
     this.logger.log(`Entering new view ${this.pbftState.view}`);
     const nextLeader = this.utils.getLeader(this.cmap, this.pbftState.view);
-    this.pbftState.viewChangeMessages = this.pbftState.viewChangeMessages.filter(item => item ? (item.view == this.pbftState.view) : false ); // initialize viewchange messages for new view TODO check that this is the desired behavior
+    this.pbftState.viewChangeMessages.map(item => item ? (item.view == this.pbftState.view) : false ); // initialize viewchange messages for new view TODO check that this is the desired behavior
     //
     this.logger.debug(`View change messages are ${JSON.stringify(this.pbftState.viewChangeMessages)}`);
     const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
@@ -491,6 +491,9 @@ export class ConsensusEngine {
     // TODO does block creator change for new view?
     // TODO validate message- check from committee, that prepares match the EB
     // !this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view) && !this.utils.isLeader(this.cmap, this.nodeNumber, (this.pbftState.view + 1))
+    if (!this.isValidViewChangeMessage(msg)) {
+      this.logger.warn(`Invalid view change message! ${JSON.stringify(msg)}`);
+    }
     if (!this.pbftState.collectingViewChangeMsgs) {
       this.logger.warn(`${msg.sender} thinks I'm new leader, but according to my state the new leader should be ${this.utils.getLeader(this.cmap, this.pbftState.view)} or ${this.utils.getLeader(this.cmap, this.pbftState.view + 1)}`);
       return;
@@ -508,16 +511,9 @@ export class ConsensusEngine {
 
     this.logger.debug(`Accepted ViewChange message ${JSON.stringify(msg)}`);
     this.updateEvidence(msg);
-    this.logger.debug(`View change messages are ${JSON.stringify(this.pbftState.viewChangeMessages)}`);
-    // if (this.pbftState.collectingViewChangeMsgs) {
     if (this.isValidByzMajorityVote(this.pbftState.viewChangeMessages)) {
         this.enterPrimaryChangeTakeover();
     }
-    //   else this.pbftState.collectingViewChangeMsgs = true;
-    //
-    // }
-
-
 
   }
 
@@ -527,7 +523,7 @@ export class ConsensusEngine {
     // otherwise, return the maximal view among all messages
     let maxViewPropMsg: Message = undefined;
     let maxViewMsg: Message = undefined;
-    for (const propMsg of vcMsgs) {
+    for (const propMsg of vcMsgs.filter( item => item ? item : false ) ) { // take only defined messages (ignore nulls)
       if (propMsg.proposal) {
         if (!maxViewPropMsg || propMsg.proposal.view > maxViewPropMsg.view) {
           maxViewPropMsg = propMsg;
