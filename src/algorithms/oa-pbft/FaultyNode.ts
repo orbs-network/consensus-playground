@@ -52,7 +52,7 @@ export default class FaultyNode extends BaseNode {
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
     this.blockchainHandler = new BlockchainHandler();
-    this.cryptoHandler = new CryptoHandler();
+    this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
 
 
 

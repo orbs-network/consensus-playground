@@ -22,6 +22,9 @@ export enum ConsensusMessageType {
   NewView
 }
 
+export enum CryptoMessageType {
+  BlockShare
+}
 
 export class Cmap {
   public order: number[];
@@ -91,6 +94,7 @@ export interface Message {
   proposal?: Proposal;
   viewChangeMsgs?: Message[];
   newPrePrepMsg?: Message;
+  cryptoMsgType?: CryptoMessageType;
   blockShare?: BlockShare;
 
 }
@@ -107,7 +111,7 @@ export class Utils {
   public committeeSize: number; // m
   public numByz: number; // f
   public nodeNumber: number;
-  public k: number;
+  public k: number = 3;
   public logger: Logger;
 
   constructor(scenario: BaseScenario, nodeNumber: number, logger: Logger) {
