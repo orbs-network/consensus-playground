@@ -397,6 +397,7 @@ export class ConsensusEngine {
    */
   @bind
   enterCommit(): void {
+    if (this.pbftState.committedLocal == true) return;
     this.logger.log(`Entering commit stage`);
     this.pbftState.committedLocal = true;
     this.pbftState.blockProof.committed = true;
