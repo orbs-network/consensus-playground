@@ -1,6 +1,6 @@
 # Consensus Playground
 
-A playground to simulate and experiment with various flavors of consensus algorithms.
+A playground to simulate and experiment with various flavors of consensus algorithms. This is a private version containing work on the Orbs Consensus Algorithm, which will be made public after the white paper release.
 
 ## Install
 
