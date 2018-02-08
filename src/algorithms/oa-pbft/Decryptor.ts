@@ -16,11 +16,7 @@ export class Decryptor {
   protected blockShares: BlockShare[];
 
 
-  // TODO need to add k shares condition
-  static Decrypt(eBlock: EncryptedBlock): DecryptedBlock {
-    const dBlock: DecryptedBlock = { term: eBlock.term, content: eBlock.content, hash: Utils.hashContent(eBlock.content), lastEBlockHash: eBlock.lastEBlockHash, cmap: eBlock.cmap };
-    return dBlock;
-  }
+
 
   constructor() {
 
@@ -44,6 +40,15 @@ export class Decryptor {
     this.reset();
 
   }
+  @bind
+  decrypt(eBlock: EncryptedBlock, blockShares: BlockShare[]): DecryptedBlock {
+    if (this.countValidShares(blockShares) < this.utils.sharingThreshold) {
+      this.utils.logger.error(`Don't have enough shares for decryption, need ${this.utils.sharingThreshold}, have ${this.countValidShares(blockShares)}`);
+      return undefined;
+    }
+    const dBlock: DecryptedBlock = { term: eBlock.term, content: eBlock.content, hash: Utils.hashContent(eBlock.content), lastEBlockHash: eBlock.lastEBlockHash, cmap: eBlock.cmap };
+    return dBlock;
+  }
 
   @bind
   inDecryptingPhase(): boolean {
@@ -61,7 +66,7 @@ export class Decryptor {
       this.handleBlockShare(newShare);
     }
     else {
-      if (this.countValidShares(this.blockShares) >= this.utils.k) {
+      if (this.countValidShares(this.blockShares) >= this.utils.sharingThreshold) {
         this.finishDecryptionPhase();
       }
     }
@@ -71,8 +76,8 @@ export class Decryptor {
   @bind
   finishDecryptionPhase(): void {
     if (this.committedEBtoDecrypt) {
-      this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.k} shares, decrypting block!`);
-      this.consensusEngine.handleBlockDecrypted(Decryptor.Decrypt(this.committedEBtoDecrypt), this.committedEBtoDecrypt);
+      this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.sharingThreshold} shares, decrypting block!`);
+      this.consensusEngine.handleBlockDecrypted(this.decrypt(this.committedEBtoDecrypt, this.blockShares), this.committedEBtoDecrypt);
       this.reset(); // finished work on this EB
     }
     else {
@@ -89,12 +94,12 @@ export class Decryptor {
     }
 
     this.blockShares[blockShare.nodeNumber - 1] = blockShare;
-    this.utils.logger.log(`Received share ${this.countValidShares(this.blockShares)}/${this.utils.k} from ${blockShare.nodeNumber} for block (${blockShare.term},${blockShare.blockHash})`);
-    if ( this.countValidShares(this.blockShares) < this.utils.k ) {
+    this.utils.logger.log(`Received share ${this.countValidShares(this.blockShares)}/${this.utils.sharingThreshold} from ${blockShare.nodeNumber} for block (${blockShare.term},${blockShare.blockHash})`);
+    if ( this.countValidShares(this.blockShares) < this.utils.sharingThreshold ) {
       this.generateShareBlock(this.committedEBtoDecrypt);
     }
 
-    if (this.countValidShares(this.blockShares) >= this.utils.k) { // not else since generateShareBlock may have added to number of shares available
+    if (this.countValidShares(this.blockShares) >= this.utils.sharingThreshold) { // not else since generateShareBlock may have added to number of shares available
       // TODO logic to handle obtaining and generation of shares
       // should handle shares that arrive before EB
       this.finishDecryptionPhase();
@@ -105,8 +110,8 @@ export class Decryptor {
   @bind
   generateShareBlock(eBlock: EncryptedBlock): BlockShare {
     let newShare: BlockShare = undefined;
-    if (eBlock && !this.blockShares[this.utils.nodeNumber - 1] && this.countValidShares(this.blockShares) < this.utils.k ) {
-      this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.k} shares, generating block share...`);
+    if (eBlock && !this.blockShares[this.utils.nodeNumber - 1] && this.countValidShares(this.blockShares) < this.utils.sharingThreshold ) {
+      this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.sharingThreshold} shares, generating block share...`);
       newShare = { blockHash: eBlock.hash, term: this.consensusEngine.getTerm(), nodeNumber: this.utils.nodeNumber };
       this.blockShares[this.utils.nodeNumber - 1] = newShare;
       const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };

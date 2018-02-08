@@ -8,7 +8,7 @@ import bind from "bind-decorator";
 const NUM_NODES = 10;
 const COMMITTEE_SIZE = 5;
 const NUM_BYZ = 0;
-const SHARING_THRESHOLD = 4;
+const SHARING_THRESHOLD = 3;
 const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 250;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;

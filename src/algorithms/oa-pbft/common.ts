@@ -111,7 +111,7 @@ export class Utils {
   public committeeSize: number; // m
   public numByz: number; // f
   public nodeNumber: number;
-  public k: number = 3;
+  public sharingThreshold: number;
   public logger: Logger;
 
   constructor(scenario: BaseScenario, nodeNumber: number, logger: Logger) {

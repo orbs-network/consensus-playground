@@ -66,11 +66,14 @@ export default class HonestNode extends BaseNode {
       this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
       this.utils.committeeSize = this.scenario.committeeSize;
       this.utils.numByz = this.scenario.numByz;
+      this.utils.sharingThreshold = this.scenario.sharingThreshold;
     }
     else { // maintain backwards compatibility for using base scenario (benchmark code for example)
       this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
       this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
+      // default values
       this.utils.numByz = F;
+      this.utils.sharingThreshold = F + 1;
     }
 
     this.blockchain.init(this.utils.numNodes);
