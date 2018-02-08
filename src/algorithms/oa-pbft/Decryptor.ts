@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Utils, Message, Block, EncryptedBlock, DecryptedBlock, BlockShare } from "./common";
+import { Utils, Message, Block, EncryptedBlock, DecryptedBlock, BlockShare, CryptoMessageType } from "./common";
 import { NetworkInterface } from "./NetworkInterface";
 import { ConsensusEngine } from "./ConsensusEngine";
 import { Blockchain } from "./Blockchain";
@@ -71,7 +71,7 @@ export class Decryptor {
   @bind
   finishDecryptionPhase(): void {
     if (this.committedEBtoDecrypt) {
-      this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}, decrypting block!`);
+      this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.k} shares, decrypting block!`);
       this.consensusEngine.handleBlockDecrypted(Decryptor.Decrypt(this.committedEBtoDecrypt), this.committedEBtoDecrypt);
       this.reset(); // finished work on this EB
     }
@@ -87,9 +87,9 @@ export class Decryptor {
     if (!this.isValidShare(blockShare)) {
       return;
     }
-    this.utils.logger.log(`Received share ${this.countValidShares(this.blockShares)}/${this.utils.k} from ${blockShare.nodeNumber} for block (${blockShare.term},${blockShare.blockHash})`);
-    this.blockShares[blockShare.nodeNumber - 1] = blockShare;
 
+    this.blockShares[blockShare.nodeNumber - 1] = blockShare;
+    this.utils.logger.log(`Received share ${this.countValidShares(this.blockShares)}/${this.utils.k} from ${blockShare.nodeNumber} for block (${blockShare.term},${blockShare.blockHash})`);
     if ( this.countValidShares(this.blockShares) < this.utils.k ) {
       this.generateShareBlock(this.committedEBtoDecrypt);
     }
@@ -105,12 +105,11 @@ export class Decryptor {
   @bind
   generateShareBlock(eBlock: EncryptedBlock): BlockShare {
     let newShare: BlockShare = undefined;
-    this.utils.logger.debug(`Have ${this.countValidShares(this.blockShares)}/${this.utils.k} shares`);
-    if (!this.blockShares[this.utils.nodeNumber - 1] && this.countValidShares(this.blockShares) < this.utils.k ) {
+    if (eBlock && !this.blockShares[this.utils.nodeNumber - 1] && this.countValidShares(this.blockShares) < this.utils.k ) {
       this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.k} shares, generating block share...`);
       newShare = { blockHash: eBlock.hash, term: this.consensusEngine.getTerm(), nodeNumber: this.utils.nodeNumber };
       this.blockShares[this.utils.nodeNumber - 1] = newShare;
-      const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage", blockShare: newShare };
+      const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage", cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
       this.netInterface.broadcast(shareMsg); // TODO fast forwarding scheme
     }
 
