@@ -14,16 +14,16 @@ const HASH_LENGTH = 8; // pseudo hash representing block hash
 
 
 export enum ConsensusMessageType {
-  PrePrepare,
-  Prepare,
-  Commit,
-  Committed,
-  ViewChange,
-  NewView
+  PrePrepare = "PrePrepare",
+  Prepare = "Prepare",
+  Commit = "Commit",
+  Committed = "Committed",
+  ViewChange = "ViewChange",
+  NewView = "NewView"
 }
 
 export enum CryptoMessageType {
-  BlockShare
+  BlockShare = "BlockShare"
 }
 
 export class Cmap {

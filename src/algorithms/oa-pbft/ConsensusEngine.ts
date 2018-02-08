@@ -119,7 +119,7 @@ export class ConsensusEngine {
       this.phase = Phase.Agreeing;
       const eBlock: EncryptedBlock = this.createNewEBlock();
       this.pbftState.candidateEBlock = eBlock;
-      const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: eBlock }; // TODO need CEBs hash also
+      const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: eBlock }; // TODO need CEBs hash also
       this.broadcastCommittee(prePrepMsg);
       this.handlePrePrepareMessage(prePrepMsg); // "sending the message to ourselves" since handling is identical
 
@@ -300,11 +300,11 @@ export class ConsensusEngine {
     this.logger.debug(`Received pre-prepare message for block (${msg.eBlock.term},${msg.eBlock.hash}) from ${msg.sender}`);
     this.pbftState.candidateEBlock = msg.eBlock;
 
-    const prepareMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
+    const prepareMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Prepare, conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) { // shortcut, committee members that receive pre-prepare should generate the corresponding prepare msg from the leader
     // and save bandwidth (the leader doesn't need to send another prepare message after the preprepare)
       this.logger.debug(`generating leader's prepare ${msg.sender}`);
-      const leaderPrepareMsg: Message = { sender: msg.sender, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
+      const leaderPrepareMsg: Message = { sender: msg.sender, type: "ConsensusMessage" + "/" + ConsensusMessageType.Prepare, conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
       this.updateEvidence(leaderPrepareMsg);
       this.broadcastCommittee(prepareMsg);
     }
@@ -366,7 +366,7 @@ export class ConsensusEngine {
   enterPrepared(): void {
     this.logger.log(`Entering Prepared stage.`);
     this.pbftState.prepared = true;
-    const commitMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Commit, view: this.pbftState.view, term: this.term, eBlockHash: this.pbftState.candidateEBlock.hash };
+    const commitMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Commit, conMsgType: ConsensusMessageType.Commit, view: this.pbftState.view, term: this.term, eBlockHash: this.pbftState.candidateEBlock.hash };
     this.broadcastCommittee(commitMsg);
     this.handleCommitMessage(commitMsg);
 
@@ -410,7 +410,7 @@ export class ConsensusEngine {
    */
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
-    const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
+    const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
     this.netInterface.broadcast(committedMsg); // TODO replace with fast propagation protocol
     this.handleCommittedMessage(committedMsg);
   }
@@ -498,7 +498,7 @@ export class ConsensusEngine {
     this.pbftState.viewChangeMessages.map(item => item ? (item.view == this.pbftState.view) : false ); // initialize viewchange messages for new view TODO check that this is the desired behavior
     //
     this.logger.debug(`View change messages are ${JSON.stringify(this.pbftState.viewChangeMessages)}`);
-    const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
+    const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.ViewChange, conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
       this.logger.debug(`unicasting to leader ${nextLeader}...`);
       this.netInterface.unicast(nextLeader, viewChangeMessage);
@@ -593,8 +593,8 @@ export class ConsensusEngine {
       // }
       this.pbftState.candidateEBlock = maxPropMsg.proposal.candidateEBlock;
     }
-    const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: this.pbftState.candidateEBlock };
-    const newViewMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage", conMsgType: ConsensusMessageType.NewView, term: this.term, view: this.pbftState.view, viewChangeMsgs: vcMsgs, newPrePrepMsg: prePrepMsg };
+    const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: this.pbftState.candidateEBlock };
+    const newViewMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.NewView, conMsgType: ConsensusMessageType.NewView, term: this.term, view: this.pbftState.view, viewChangeMsgs: vcMsgs, newPrePrepMsg: prePrepMsg };
     this.broadcastCommittee(newViewMsg);
     this.handleNewViewMessage(newViewMsg); // "sending the message to ourselves" since handling is identical
 

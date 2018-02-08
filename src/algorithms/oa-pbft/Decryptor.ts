@@ -109,7 +109,7 @@ export class Decryptor {
       this.utils.logger.log(`Have ${this.countValidShares(this.blockShares)}/${this.utils.k} shares, generating block share...`);
       newShare = { blockHash: eBlock.hash, term: this.consensusEngine.getTerm(), nodeNumber: this.utils.nodeNumber };
       this.blockShares[this.utils.nodeNumber - 1] = newShare;
-      const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage", cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
+      const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
       this.netInterface.broadcast(shareMsg); // TODO fast forwarding scheme
     }
 
@@ -118,14 +118,21 @@ export class Decryptor {
 
   @bind
   isValidShare(shareBlock: BlockShare): boolean {
-    // TODO implement
+    if (!shareBlock) return false;
+    if (this.consensusEngine.getTerm() != shareBlock.term) {
+      this.utils.logger.debug(`Received block share for term ${shareBlock.term}, at term ${this.consensusEngine.getTerm()}`);
+      return false;
+    }
+    if (!this.committedEBtoDecrypt || this.committedEBtoDecrypt.hash != shareBlock.blockHash) {
+      this.utils.logger.debug(`Received block share for block ${shareBlock.blockHash}, my EB is ${this.committedEBtoDecrypt ? this.committedEBtoDecrypt.hash : "undefined" }`);
+    }
     return true;
   }
 
   @bind
   countValidShares(shareBlocks: BlockShare[]): number {
     let count = 0;
-    shareBlocks.forEach(item => count += (item) ? 1 : 0);
+    shareBlocks.forEach(item => count += (this.isValidShare(item)) ? 1 : 0);
     return count;
   }
 

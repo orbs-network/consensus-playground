@@ -71,9 +71,16 @@ export default class HonestNode extends BaseNode {
   }
 
   @bind
+  getMessageTopType(str: string): string {
+    const i = str.indexOf("/");
+    if (i > -1) return str.slice(0, i);
+    else return str;
+  }
+
+  @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
-    switch (msg.type) {
+    switch (this.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         this.consensusHandler.handleMessage(msg);
       }
