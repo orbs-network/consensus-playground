@@ -13,6 +13,7 @@ import { CryptoHandler } from "./CryptoHandler";
 
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
+import { OrbsScenario } from "../../scenarios/oa-pbft/OrbsScenario";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
@@ -61,9 +62,17 @@ export default class HonestNode extends BaseNode {
   @bind
   onStart(event: NodeStartEvent): void {
     this.logger.debug(`Starting...`);
-    this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
-    this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
-    this.utils.numByz = F;
+    if (this.scenario instanceof OrbsScenario) {
+      this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
+      this.utils.committeeSize = this.scenario.committeeSize;
+      this.utils.numByz = this.scenario.numByz;
+    }
+    else { // maintain backwards compatibility for using base scenario (benchmark code for example)
+      this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
+      this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
+      this.utils.numByz = F;
+    }
+
     this.blockchain.init(this.utils.numNodes);
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
     this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);

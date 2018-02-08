@@ -239,7 +239,7 @@ export class ConsensusEngine {
   @bind
   isValidConMsg(msg: Message, conMsgType: ConsensusMessageType): boolean {
     if (!this.utils.isCommitteeMember(this.cmap, msg.sender)) {
-      this.logger.warn(`Got message from non-committee member ${msg.sender}, committee is ${this.utils.getCommittee(this.cmap)}`);
+      this.logger.warn(`Got message from non-committee member ${msg.sender}, committee is ${this.utils.getCommittee(this.cmap)}. Message = ${JSON.stringify(msg)}`);
     }
     if (msg.conMsgType != conMsgType) {
       this.logger.debug(`Expected message of type ${conMsgType}, got message of type ${msg.conMsgType}`);
