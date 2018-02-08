@@ -12,5 +12,5 @@ Version one of the event-based simulator for the Orbs Consensus algorithm.
 
 ## To be added to v1:
 * Syncing scheme - Until this is added, nodes that fall out of sync currently only have a limited capacity to return.
-
+* Finish message validation implementations
 > Written with [StackEdit](https://stackedit.io/).

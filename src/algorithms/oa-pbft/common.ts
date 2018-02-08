@@ -132,6 +132,10 @@ export class Utils {
     return (a >= Math.ceil(BYZ_MAJORITY * b));
   }
 
+  static areMessagesEqual(msg1: Message, msg2: Message): boolean {
+    return (JSON.stringify(msg1) == JSON.stringify(msg2));
+  }
+
 
   @bind
   isBlockEqual(block1: Block, block2: Block): boolean {
