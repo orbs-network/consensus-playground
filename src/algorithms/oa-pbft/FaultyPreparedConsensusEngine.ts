@@ -1,7 +1,6 @@
 import * as _ from "lodash";
 import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal } from "./common";
 import * as Common from "./common";
-import Logger from "../../simulation/Logger";
 import { Blockchain } from "./Blockchain";
 import { Decryptor } from "./Decryptor";
 import { Mempool } from "./Mempool";
@@ -38,8 +37,8 @@ export interface PBFTState {
 
 export class FaultyPreparedConsensusEngine extends ConsensusEngine {
 
-  constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, logger: Logger = undefined, timer: Timer = undefined) {
-    super(nodeNumber, decryptor, blockchain, mempool, netInterface, utils, logger, timer);
+  constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, timer: Timer = undefined) {
+    super(nodeNumber, decryptor, blockchain, mempool, netInterface, utils, timer);
     this.sleeping = false;
   }
 
@@ -49,7 +48,7 @@ export class FaultyPreparedConsensusEngine extends ConsensusEngine {
       return;
     }
     if (this.utils.scenario.randomizer.next() < FAULTY_PROB ) {
-      this.logger.warn(`Entering Prepared stage. Oh no, I'm going offl-`);
+      this.utils.logger.warn(`Entering Prepared stage. Oh no, I'm going offl-`);
       this.timer.setWakeupTimer(this.utils.scenario.randomizer.nextIntegerInRange(PROPOSAL_TIMER_MS, 3 * PROPOSAL_TIMER_MS / 2));
       this.sleeping = true;
     }

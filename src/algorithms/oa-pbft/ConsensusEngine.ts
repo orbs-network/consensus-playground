@@ -50,11 +50,9 @@ export class ConsensusEngine {
   protected term: number;
   protected phase: Phase;
   protected pbftState: PBFTState;
-
-  protected logger: Logger;
   protected utils: Utils;
 
-  constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, logger: Logger = undefined, timer: Timer = undefined) {
+  constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, timer: Timer = undefined) {
     this.nodeNumber = nodeNumber;
     this.decryptor = decryptor;
     this.blockchain = blockchain;
@@ -64,7 +62,6 @@ export class ConsensusEngine {
 
     this.phase = undefined;
     this.term = 0;
-    this.logger = logger;
     this.utils = utils;
     this.initPBFT_State();
 
@@ -113,10 +110,10 @@ export class ConsensusEngine {
     this.initPBFT_State();
     this.term += 1;
     this.timer.setProposalTimer(PROPOSAL_TIMER_MS); // TODO also leader or just committee?
-    this.logger.log(`Entering term ${this.term}, committee is ${this.utils.getCommittee(this.cmap)}`);
+    this.utils.logger.log(`Entering term ${this.term}, committee is ${this.utils.getCommittee(this.cmap)}`);
     this.setCollectingViewChanges();
     if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
-      this.logger.log(`Chosen as leader`);
+      this.utils.logger.log(`Chosen as leader`);
       this.phase = Phase.Agreeing;
       const eBlock: EncryptedBlock = this.createNewEBlock();
       // this.pbftState.candidateEBlock = eBlock;
@@ -134,11 +131,11 @@ export class ConsensusEngine {
 
   @bind
   initPBFT_State(): void {
-    if (this.pbftState) this.logger.debug(`Initializing PBFT state, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
+    if (this.pbftState) this.utils.logger.debug(`Initializing PBFT state, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
     const futureMsgs = (this.pbftState) ? this.pbftState.outOfSyncMessages.filter( msg => (msg.term >= this.term) ) : [] ;
     const newViewMsgs = (this.pbftState) ? this.pbftState.newViewMessages.filter( msg => (msg.term >= this.term) ) : [] ;
-    this.logger.debug(`Initializing PBFT state, future messages are ${JSON.stringify(futureMsgs)}`);
-    this.logger.debug(`Initializing PBFT state, newView messages are ${JSON.stringify(newViewMsgs)}`);
+    this.utils.logger.debug(`Initializing PBFT state, future messages are ${JSON.stringify(futureMsgs)}`);
+    this.utils.logger.debug(`Initializing PBFT state, newView messages are ${JSON.stringify(newViewMsgs)}`);
     this.pbftState = { view: 1, candidateEBlock: undefined, outOfSyncMessages: futureMsgs, prepMessages: [], commitMessages: [], prepared: false, committedLocal: false, blockProof: this.createNewBP(), viewChangeMessages: new Array(this.utils.numNodes).fill(undefined), collectingViewChangeMsgs: false, newViewMessages: newViewMsgs };
 
   }
@@ -158,13 +155,13 @@ export class ConsensusEngine {
   isInSyncMessage(msg: Message): boolean {
     if (msg.term < this.term) return false; // ignore messages from the past
     if ( (msg.term > this.term) || !(msg.view == this.pbftState.view) ) {
-      this.logger.debug(`Received message with term ${msg.term}, expected ${this.term}, and with view ${msg.view}, expected ${this.pbftState.view}.`);
-      this.logger.debug(`Message is ${JSON.stringify(msg)}`);
+      this.utils.logger.debug(`Received message with term ${msg.term}, expected ${this.term}, and with view ${msg.view}, expected ${this.pbftState.view}.`);
+      this.utils.logger.debug(`Message is ${JSON.stringify(msg)}`);
       return false;
     }
 
     if ( (msg.conMsgType != ConsensusMessageType.PrePrepare) && !this.pbftState.candidateEBlock) {
-      this.logger.debug(`Receieved ${JSON.stringify(msg)}, but have no candidate EB!`);
+      this.utils.logger.debug(`Receieved ${JSON.stringify(msg)}, but have no candidate EB!`);
       return false;
     }
     return true;
@@ -174,7 +171,7 @@ export class ConsensusEngine {
   @bind
   isValidEBlock(eBlockHash: string): boolean {
     if (eBlockHash != this.pbftState.candidateEBlock.hash) {
-      this.logger.debug(`Mismatching hash- receieved ${eBlockHash}, expected ${this.pbftState.candidateEBlock.hash}`);
+      this.utils.logger.debug(`Mismatching hash- receieved ${eBlockHash}, expected ${this.pbftState.candidateEBlock.hash}`);
       return false;
     }
     // to avoid boilerplate- assuming that eblock content matches hash TODO can add
@@ -184,7 +181,7 @@ export class ConsensusEngine {
   isRepresentativeEBlock(eBlock: EncryptedBlock): boolean {
     // dummy implementation, should verify EB contains at least one of node's etxs
     // if () {
-    //   this.logger.warn(`Received invalid pre-prepare message from ${msg.sender}, EB didn't contain any of my etxs!}`);
+    //   this.utils.logger.warn(`Received invalid pre-prepare message from ${msg.sender}, EB didn't contain any of my etxs!}`);
     // }
     return true;
   }
@@ -220,7 +217,7 @@ export class ConsensusEngine {
           count += 1;
         }
         else {
-          this.logger.warn(`${i + 1} submitted a vote, but not on committee!`);
+          this.utils.logger.warn(`${i + 1} submitted a vote, but not on committee!`);
         }
       }
     }
@@ -246,15 +243,15 @@ export class ConsensusEngine {
       return false;
     }
     if (!this.utils.isCommitteeMember(this.cmap, msg.sender) && this.isInSyncMessage(msg) ) {
-      this.logger.warn(`Got message from non-committee member ${msg.sender}, committee is ${this.utils.getCommittee(this.cmap)}. Message = ${JSON.stringify(msg)}`);
+      this.utils.logger.warn(`Got message from non-committee member ${msg.sender}, committee is ${this.utils.getCommittee(this.cmap)}. Message = ${JSON.stringify(msg)}`);
     }
     if (msg.conMsgType != conMsgType) {
-      this.logger.debug(`Expected message of type ${conMsgType}, got message of type ${msg.conMsgType}`);
+      this.utils.logger.debug(`Expected message of type ${conMsgType}, got message of type ${msg.conMsgType}`);
       return false;
     }
     const ebHash = (conMsgType == ConsensusMessageType.PrePrepare) ? msg.eBlock.hash : msg.eBlockHash;
     if (this.pbftState.candidateEBlock && !this.isValidEBlock(ebHash)) {
-      this.logger.debug(`Invalid Eblock (${ebHash}), msg=${JSON.stringify(msg)}`);
+      this.utils.logger.debug(`Invalid Eblock (${ebHash}), msg=${JSON.stringify(msg)}`);
       return false;
     }
 
@@ -316,20 +313,20 @@ export class ConsensusEngine {
       }
     }
     if (!(msg.sender == this.utils.getLeader(this.cmap, this.pbftState.view))) {
-      this.logger.warn(`Received pre-prepare message from ${msg.sender}, expected from ${this.cmap[this.pbftState.view]}`);
+      this.utils.logger.warn(`Received pre-prepare message from ${msg.sender}, expected from ${this.cmap[this.pbftState.view]}`);
       return;
     }
     if (!this.isRepresentativeEBlock(msg.eBlock)) {
       return;
     }
 
-    this.logger.debug(`Received pre-prepare message for block (${msg.eBlock.term},${msg.eBlock.hash}) from ${msg.sender}`);
+    this.utils.logger.debug(`Received pre-prepare message for block (${msg.eBlock.term},${msg.eBlock.hash}) from ${msg.sender}`);
     this.pbftState.candidateEBlock = msg.eBlock;
 
     const prepareMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Prepare, conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) { // shortcut, committee members that receive pre-prepare should generate the corresponding prepare msg from the leader
     // and save bandwidth (the leader doesn't need to send another prepare message after the preprepare)
-      this.logger.debug(`generating leader's prepare ${msg.sender}`);
+      this.utils.logger.debug(`generating leader's prepare ${msg.sender}`);
       const leaderPrepareMsg: Message = { sender: msg.sender, type: "ConsensusMessage" + "/" + ConsensusMessageType.Prepare, conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
       this.updateEvidence(leaderPrepareMsg);
       this.broadcastCommittee(prepareMsg);
@@ -354,7 +351,7 @@ export class ConsensusEngine {
       return;
     }
     this.updateEvidence(msg);
-    this.logger.debug(`Received ${this.countValidVotes(this.pbftState.blockProof.prepares)} votes out of ${this.pbftState.blockProof.prepares.length}, is ${this.pbftState.blockProof.prepares}, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
+    this.utils.logger.debug(`Received ${this.countValidVotes(this.pbftState.blockProof.prepares)} votes out of ${this.pbftState.blockProof.prepares.length}, is ${this.pbftState.blockProof.prepares}, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
     if (this.isValidByzMajorityVote(this.pbftState.blockProof.prepares) && this.pbftState.candidateEBlock && !this.pbftState.prepared) {
       this.enterPrepared();
     }
@@ -379,7 +376,7 @@ export class ConsensusEngine {
     }
     this.pbftState.outOfSyncMessages = allOutOfSyncMsgs;
     for (const msg of allValidMsgs) {
-       this.logger.debug(`Validated out of sync message ${JSON.stringify(msg)}`);
+       this.utils.logger.debug(`Validated out of sync message ${JSON.stringify(msg)}`);
        this.updateEvidence(msg);
      }
 
@@ -390,7 +387,7 @@ export class ConsensusEngine {
    */
   @bind
   enterPrepared(): void {
-    this.logger.log(`Entering Prepared stage.`);
+    this.utils.logger.log(`Entering Prepared stage.`);
     this.pbftState.prepared = true;
     const commitMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Commit, conMsgType: ConsensusMessageType.Commit, view: this.pbftState.view, term: this.term, eBlockHash: this.pbftState.candidateEBlock.hash };
     this.broadcastCommittee(commitMsg);
@@ -424,7 +421,7 @@ export class ConsensusEngine {
   @bind
   enterCommit(): void {
     if (this.pbftState.committedLocal == true) return;
-    this.logger.log(`Entering commit stage`);
+    this.utils.logger.log(`Entering commit stage`);
     this.pbftState.committedLocal = true;
     this.pbftState.blockProof.committed = true;
     this.propagateBP(this.pbftState.blockProof, this.pbftState.candidateEBlock);
@@ -445,27 +442,27 @@ export class ConsensusEngine {
   isValidCommittedMessage(msg: Message): boolean {
     if (!(msg.eBlock.term == this.term)) {
       // TODO handle node out of sync
-      if (msg.eBlock.term > this.term) this.logger.warn(`Out of sync, at term ${this.term}, received committed block at term ${msg.eBlock.term}`);
+      if (msg.eBlock.term > this.term) this.utils.logger.warn(`Out of sync, at term ${this.term}, received committed block at term ${msg.eBlock.term}`);
       return false;
     }
     if (!(this.utils.areCmapsEqual(msg.eBlock.cmap, this.cmap))) {
-      this.logger.warn(`Cmap mismatch, got ${msg.eBlock.cmap}, expected ${this.cmap}`);
+      this.utils.logger.warn(`Cmap mismatch, got ${msg.eBlock.cmap}, expected ${this.cmap}`);
       return false;
     }
     if (!this.utils.isCommitteeMember(this.cmap, msg.eBlock.creator)) {
-      this.logger.warn(`Block creator ${msg.eBlock.creator} not in committee!`);
+      this.utils.logger.warn(`Block creator ${msg.eBlock.creator} not in committee!`);
       return false;
     }
     if (!(this.isValidByzMajorityVote(msg.blockProof.prepares))) {
-      this.logger.warn(`Missing prepare messages!`);
+      this.utils.logger.warn(`Missing prepare messages!`);
       return false;
     }
     if (!(this.isValidByzMajorityVote(msg.blockProof.commits))) {
-      this.logger.warn(`Missing commit messages!`);
+      this.utils.logger.warn(`Missing commit messages!`);
       return false;
     }
     if (!msg.blockProof.committed) {
-      this.logger.warn(`Block not committed!`);
+      this.utils.logger.warn(`Block not committed!`);
       return false;
     }
     return true;
@@ -498,14 +495,14 @@ export class ConsensusEngine {
    */
   @bind
   handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock): void {
-    this.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
+    this.utils.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
     this.blockchain.addBlock(this.createBlock(eBlock, dBlock, this.pbftState.blockProof));
     this.enterNewTerm(dBlock);
   }
 
   @bind
   handleProposalExpiredTimeout(): void {
-    this.logger.log(`Timeout expired for current proposal (term = ${this.term}, view = ${this.pbftState.view})!`);
+    this.utils.logger.log(`Timeout expired for current proposal (term = ${this.term}, view = ${this.pbftState.view})!`);
     this.enterNewView();
 
   }
@@ -517,7 +514,7 @@ export class ConsensusEngine {
   @bind
   setCollectingViewChanges(): void {
     this.pbftState.collectingViewChangeMsgs = this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view + 1);
-    if (this.pbftState.collectingViewChangeMsgs) this.logger.debug(`Collecting view change messages...`);
+    if (this.pbftState.collectingViewChangeMsgs) this.utils.logger.debug(`Collecting view change messages...`);
   }
 
   @bind
@@ -527,19 +524,19 @@ export class ConsensusEngine {
     // if proposal already reached Prepared state, send the evidence and proposed
     // block as part of the view change message.
     if (this.pbftState.prepared) {
-      if (!this.isValidByzMajorityVote(this.pbftState.blockProof.prepares)) this.logger.error(`In prepared state but don't have 2f+1 prepare messages!`);
+      if (!this.isValidByzMajorityVote(this.pbftState.blockProof.prepares)) this.utils.logger.error(`In prepared state but don't have 2f+1 prepare messages!`);
       proposal = { term: this.term, view: this.pbftState.view, candidateEBlock: this.pbftState.candidateEBlock, prepMessages: this.pbftState.prepMessages };
     }
     // update view, move to next leader
     this.pbftState.view += 1;
-    this.logger.log(`Entering new view ${this.pbftState.view}`);
+    this.utils.logger.log(`Entering new view ${this.pbftState.view}`);
     const nextLeader = this.utils.getLeader(this.cmap, this.pbftState.view);
     this.pbftState.viewChangeMessages.map(item => item ? (item.view == this.pbftState.view) : false ); // initialize viewchange messages for new view TODO check that this is the desired behavior
     //
-    this.logger.debug(`View change messages are ${JSON.stringify(this.pbftState.viewChangeMessages)}`);
+    this.utils.logger.debug(`View change messages are ${JSON.stringify(this.pbftState.viewChangeMessages)}`);
     const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.ViewChange, conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
-      this.logger.debug(`unicasting to leader ${nextLeader}...`);
+      this.utils.logger.debug(`unicasting to leader ${nextLeader}...`);
       this.netInterface.unicast(nextLeader, viewChangeMessage);
       this.setCollectingViewChanges(); // next leader should be ready if this new view fails.
     }
@@ -564,10 +561,10 @@ export class ConsensusEngine {
     // TODO does block creator change for new view?
     // TODO validate message- check from committee, that prepares match the EB
     if (!this.isValidViewChangeMessage(msg)) {
-      this.logger.warn(`Invalid view change message! ${JSON.stringify(msg)}`);
+      this.utils.logger.warn(`Invalid view change message! ${JSON.stringify(msg)}`);
     }
     if (!this.pbftState.collectingViewChangeMsgs) {
-      this.logger.warn(`${msg.sender} thinks I'm new leader, but according to my state the new leader should be ${this.utils.getLeader(this.cmap, this.pbftState.view)} or ${this.utils.getLeader(this.cmap, this.pbftState.view + 1)}`);
+      this.utils.logger.warn(`${msg.sender} thinks I'm new leader, but according to my state the new leader should be ${this.utils.getLeader(this.cmap, this.pbftState.view)} or ${this.utils.getLeader(this.cmap, this.pbftState.view + 1)}`);
       return;
     }
 
@@ -576,12 +573,12 @@ export class ConsensusEngine {
     // 2. on either same view or one behind.
     if (this.pbftState.view > (msg.view + 1) || (this.term > msg.term) ) return; // ignore messages from previous terms or 2 views back or more
     if ( (this.term < msg.term) || ((this.pbftState.view + 1) < msg.view )) {
-      this.logger.warn(`Out of sync: getting messages with term,view (${msg.term},${msg.view}) but I'm at (${this.term},${this.pbftState.view})`);
+      this.utils.logger.warn(`Out of sync: getting messages with term,view (${msg.term},${msg.view}) but I'm at (${this.term},${this.pbftState.view})`);
       // TODO need to sync?
       return;
     }
 
-    this.logger.debug(`Accepted ViewChange message ${JSON.stringify(msg)}`);
+    this.utils.logger.debug(`Accepted ViewChange message ${JSON.stringify(msg)}`);
     this.updateEvidence(msg);
     if (this.isValidByzMajorityVote(this.pbftState.viewChangeMessages)) {
         this.enterPrimaryChangeTakeover();
@@ -611,7 +608,7 @@ export class ConsensusEngine {
 
   @bind
   enterPrimaryChangeTakeover() {
-    this.logger.log(`Received majority of ${this.countValidVotes(this.pbftState.viewChangeMessages)} votes out of ${this.utils.committeeSize}, entering new view.`);
+    this.utils.logger.log(`Received majority of ${this.countValidVotes(this.pbftState.viewChangeMessages)} votes out of ${this.utils.committeeSize}, entering new view.`);
     const vcMsgs: Message[] = this.pbftState.viewChangeMessages; // TODO make sure deep copy or will be erased when new view entered
     this.pbftState.collectingViewChangeMsgs = false; // TODO currently this means that if the next leader received 2f+1
     // messages before his own timeout expires, his own view change message will not be handled
@@ -620,7 +617,7 @@ export class ConsensusEngine {
     if (!(this.pbftState.view == maxPropMsg.view)) {
       if (this.pbftState.view + 1 == maxPropMsg.view) this.enterNewView();
       else {
-        this.logger.error(`Not in sync: Maximum view proposal is ${maxPropMsg.view}, I'm at ${this.pbftState.view}`);
+        this.utils.logger.error(`Not in sync: Maximum view proposal is ${maxPropMsg.view}, I'm at ${this.pbftState.view}`);
       }
     }
     if (!maxPropMsg.proposal) {
@@ -628,7 +625,7 @@ export class ConsensusEngine {
     }
     else {
       // if (maxProp.view != this.pbftState.view) {
-      //   this.logger.error(`Not in sync: Maximum view proposal is ${maxProp.view}, I'm at ${this.pbftState.view}`);
+      //   this.utils.logger.error(`Not in sync: Maximum view proposal is ${maxProp.view}, I'm at ${this.pbftState.view}`);
       // }
       this.pbftState.candidateEBlock = maxPropMsg.proposal.candidateEBlock;
     }
@@ -643,11 +640,11 @@ export class ConsensusEngine {
   handleNewViewMessage(msg: Message): void {
     // TODO check validity of new view message
     if ( [this.pbftState.view, (this.pbftState.view + 1) ].indexOf(msg.view) == -1 ) {
-      this.logger.error(`Out of sync: NewView message view is ${msg.view}, I'm at ${this.pbftState.view}.`);
+      this.utils.logger.error(`Out of sync: NewView message view is ${msg.view}, I'm at ${this.pbftState.view}.`);
     }
     this.updateEvidence(msg);
     if (!this.getMaximalViewProposalMsg(msg.viewChangeMsgs).proposal) { // means that a new block was created, treat this as a new pbft round initialized by the attached pre-prepare message
-      this.logger.log(`Received new view message from ${msg.sender} with a newly created block, starting new round at view ${msg.view}`);
+      this.utils.logger.log(`Received new view message from ${msg.sender} with a newly created block, starting new round at view ${msg.view}`);
       this.initPBFT_State();
       this.pbftState.view = msg.view;
       this.handlePrePrepareMessage(msg.newPrePrepMsg);
@@ -658,7 +655,7 @@ export class ConsensusEngine {
           this.enterNewView();
         }
         else {
-          this.logger.error(`Not in sync: Maximum view proposal is ${msg.view}, I'm at ${this.pbftState.view}`);
+          this.utils.logger.error(`Not in sync: Maximum view proposal is ${msg.view}, I'm at ${this.pbftState.view}`);
         }
 
       }
@@ -678,7 +675,7 @@ export class ConsensusEngine {
 
   @bind
   handleSleepTimeoutExpired(): void {
-    this.logger.log(`Waking up!`);
+    this.utils.logger.log(`Waking up!`);
     this.sleeping = false;
   }
 
