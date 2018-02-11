@@ -7,9 +7,9 @@ import { NodeModule } from "../simulation/BaseNode";
 import Statistics from "../simulation/Statistics";
 
 const fs = require("fs");
-const dir = "oa-benchmark-output";
+const dir = "simulations/oa-benchmark-output";
 const now = new Date(Date.now());
-const outFile = `${dir}/benchmark_${now.toISOString()}.html`;
+const outFile = `${dir}/benchmark_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.html`; // 2 types of ':' for some reason...
 function loadScenario(scenarioName: string): typeof OrbsScenarioWithNodeModule {
   try {
     return require(`./scenarios/${scenarioName}`).default;
