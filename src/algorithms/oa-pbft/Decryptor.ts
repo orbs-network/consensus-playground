@@ -100,8 +100,6 @@ export class Decryptor {
     }
 
     if (this.countValidShares(this.blockShares) >= this.utils.sharingThreshold) { // not else since generateShareBlock may have added to number of shares available
-      // TODO logic to handle obtaining and generation of shares
-      // should handle shares that arrive before EB
       this.finishDecryptionPhase();
     }
 

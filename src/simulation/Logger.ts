@@ -3,7 +3,10 @@ import * as colors from "colors";
 import * as _ from "lodash";
 import bind from "bind-decorator";
 
-const DEBUG = false;
+const DEBUG = 1;
+const INFO = 2;
+const WARN = 3;
+const DEBUG_LEVEL = 2;
 
 export default class Logger {
   protected loggerIdString: string;
@@ -16,14 +19,18 @@ export default class Logger {
 
   @bind
   log(str: string): void {
-    const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
-    console.log(`[${timestamp}] ${this.loggerIdString}: ${str}`);
+    if (INFO >= DEBUG_LEVEL) {
+      const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
+      console.log(`[${timestamp}] ${this.loggerIdString}: ${str}`);
+    }
   }
 
   @bind
   warn(str: string): void {
-    const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
-    console.log(colors.yellow.bold(`[${timestamp}] WARNING! ${this.loggerIdString}: ${str}`));
+    if (WARN >= DEBUG_LEVEL) {
+      const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
+      console.log(colors.yellow.bold(`[${timestamp}] WARNING! ${this.loggerIdString}: ${str}`));
+    }
     this.scenario.statistics.totalWarnings++;
   }
 
@@ -36,7 +43,7 @@ export default class Logger {
 
   @bind
   debug(str: string): void {
-    if (DEBUG) {
+    if (DEBUG >= DEBUG_LEVEL) {
       const timestamp = _.padStart(this.scenario.currentTimestamp.toString(), 6, "0");
       console.log(colors.grey(`[${timestamp}] DEBUG: ${this.loggerIdString}: ${str}`));
     }
