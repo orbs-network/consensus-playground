@@ -114,11 +114,11 @@ export class Utils {
   public sharingThreshold: number;
   public logger: Logger;
 
+  // number of nodes, committee size and number of Byzantine nodes are handled by
+  // the Node since the number of nodes is only determined after the scenario generates them.
+  // TODO in the future it should be handled by the scenario
   constructor(scenario: BaseScenario, nodeNumber: number, logger: Logger) {
     this.scenario = scenario;
-    this.numNodes = scenario.numNodes;
-    this.committeeSize = this.numNodes; // TODO could also be in scenario
-    this.numByz = F;
     this.nodeNumber = nodeNumber;
     this.logger = logger;
   }

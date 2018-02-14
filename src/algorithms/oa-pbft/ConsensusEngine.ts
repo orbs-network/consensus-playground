@@ -85,7 +85,7 @@ export class ConsensusEngine {
 
  /**
   * Initialize consensus algorithm and enter first term. Called after all nodes have been generated.
-  * TODO in the future this should contain more detailed information about each node * and not just numbers
+  * TODO in the future this should contain more detailed information about each node * and not just numbers. check to see if needed or utils alreay initialized
   * @param numNodes - total number of nodes in network (n)
   * @param committeeSize - committee size (m)
   * @param numByz - assumed number of Byzantine nodes (f)
@@ -109,7 +109,7 @@ export class ConsensusEngine {
     this.cmap = this.sortition(lastDBlock);
     this.initPBFT_State();
     this.term += 1;
-    this.timer.setProposalTimer(PROPOSAL_TIMER_MS); // TODO also leader or just committee?
+    this.timer.setProposalTimer(PROPOSAL_TIMER_MS);
     this.utils.logger.log(`Entering term ${this.term}, committee is ${this.utils.getCommittee(this.cmap)}`);
     this.setCollectingViewChanges();
     if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
@@ -117,7 +117,7 @@ export class ConsensusEngine {
       this.phase = Phase.Agreeing;
       const eBlock: EncryptedBlock = this.createNewEBlock();
       // this.pbftState.candidateEBlock = eBlock;
-      const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: eBlock }; // TODO need CEBs hash also
+      const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: eBlock, eBlockHash: eBlock.hash };
       this.broadcastCommittee(prePrepMsg);
       this.handlePrePrepareMessage(prePrepMsg); // "sending the message to ourselves" since handling is identical
 
@@ -148,7 +148,8 @@ export class ConsensusEngine {
   }
 
 /**
- * Check if message is in sync with node's current state - on same term and view, and * that if the message is a prepare or commit message, the corresponding pre-prepare message has already been seen.
+ * Check if message is in sync with node's current state - on same term and view, and
+ * that if the message is a prepare or commit message, the corresponding pre-prepare message has already been seen.
  * @param message - Some ConsensusMessage
  */
   @bind
@@ -300,7 +301,7 @@ export class ConsensusEngine {
     }
     // if in sync, we shouldn't receive more than 1 preprepare message for this term
     if (this.pbftState.candidateEBlock) {
-      this.utils.logger.warn(`Received preprepare message ${JSON.stringify(msg)}, already received one this term with block (${this.pbftState.candidateEBlock.term},${this.pbftState.candidateEBlock.hash})`);
+      this.utils.logger.warn(`Received preprepare message ${JSON.stringify(msg)}, already received one for current view ${this.pbftState.view} with block (${this.pbftState.candidateEBlock.term},${this.pbftState.candidateEBlock.hash})`);
       return;
     }
     // if view > 1, make sure the preprepare message is identical to that in the NewView message
@@ -312,7 +313,7 @@ export class ConsensusEngine {
         this.utils.logger.error(`Preprepare message ${JSON.stringify(msg)} doesn't correspond to NewView message ${JSON.stringify(this.pbftState.newViewMessages[this.pbftState.view - 1 - 1].newPrePrepMsg)}`);
       }
     }
-    if (!(msg.sender == this.utils.getLeader(this.cmap, this.pbftState.view))) {
+    if (!this.utils.isLeader(this.cmap, msg.sender, this.pbftState.view)) {
       this.utils.logger.warn(`Received pre-prepare message from ${msg.sender}, expected from ${this.cmap[this.pbftState.view]}`);
       return;
     }
@@ -341,9 +342,8 @@ export class ConsensusEngine {
   @bind
   handlePrepareMessage(msg: Message): void {
     // TODO what about the case where we receive 2f+1 prepare messages before preprepare? A: can ask for the prepare message
-    // TODO is there a case where we don't have our own prepare message?
     this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]);
-    if (!this.isInSyncMessage(msg)) { // TODO move to consensus handler
+    if (!this.isInSyncMessage(msg)) { // TODO future- could be handled by syncing mechanism?
       this.pbftState.outOfSyncMessages.push(msg);
       return;
     }
@@ -401,7 +401,7 @@ export class ConsensusEngine {
   @bind
   handleCommitMessage(msg: Message): void {
     this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); // check if maybe out of sync messages synced meanwhile
-    if (!this.isInSyncMessage(msg)) { // TODO move to consensus handler
+    if (!this.isInSyncMessage(msg)) {
       this.pbftState.outOfSyncMessages.push(msg);
       return;
     }
@@ -531,8 +531,7 @@ export class ConsensusEngine {
     this.pbftState.view += 1;
     this.utils.logger.log(`Entering new view ${this.pbftState.view}`);
     const nextLeader = this.utils.getLeader(this.cmap, this.pbftState.view);
-    this.pbftState.viewChangeMessages.map(item => item ? (item.view == this.pbftState.view) : false ); // initialize viewchange messages for new view TODO check that this is the desired behavior
-    //
+    this.pbftState.viewChangeMessages.map(item => item ? (item.view == this.pbftState.view) : false ); // initialize viewchange messages for new view.
     this.utils.logger.debug(`View change messages are ${JSON.stringify(this.pbftState.viewChangeMessages)}`);
     const viewChangeMessage: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.ViewChange, conMsgType: ConsensusMessageType.ViewChange, term: this.term, view: this.pbftState.view, proposal: proposal };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {

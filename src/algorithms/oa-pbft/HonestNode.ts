@@ -53,10 +53,6 @@ export default class HonestNode extends BaseNode {
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
 
 
-
-
-
-
   }
 
   @bind
@@ -72,8 +68,8 @@ export default class HonestNode extends BaseNode {
       this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
       this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
       // default values
-      this.utils.numByz = F;
-      this.utils.sharingThreshold = F + 1;
+      this.utils.numByz = 0;
+      this.utils.sharingThreshold = this.utils.numByz + 1;
     }
 
     this.blockchain.init(this.utils.numNodes);
