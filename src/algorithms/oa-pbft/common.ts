@@ -136,6 +136,10 @@ export class Utils {
     return (JSON.stringify(msg1) == JSON.stringify(msg2));
   }
 
+  static areCmapsEqual(cmap1: Cmap, cmap2: Cmap): boolean {
+    return _.isEqual(cmap1.order, cmap2.order); // order matters as required
+  }
+
 
   @bind
   isBlockEqual(block1: Block, block2: Block): boolean {
@@ -176,10 +180,7 @@ export class Utils {
   }
 
 
-  @bind
-  areCmapsEqual(cmap1: Cmap, cmap2: Cmap): boolean {
-    return _.isEqual(cmap1.order, cmap2.order); // order matters as required
-  }
+
 
 
 }
