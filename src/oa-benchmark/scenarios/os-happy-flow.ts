@@ -14,8 +14,9 @@ const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 export default class Scenario extends BaseOrbsScenarioWithNode {
   public oaConfig: OrbsExpConfig;
 
-  constructor(seed: string, Node: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
-    super(seed, Node, FaultyNode, oaConfig);
+  constructor(seed: string, Node: typeof NodeModule, oaConfig: OrbsExpConfig) {
+    super(seed, Node, oaConfig);
+    this.oaConfig = oaConfig;
   }
 
   @bind
