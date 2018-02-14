@@ -243,9 +243,17 @@ export class ConsensusEngine {
       this.utils.logger.error(`Currently supporting only Preprepare, Prepared and Commit type messages`);
       return false;
     }
-    if (!this.utils.isCommitteeMember(this.cmap, msg.sender) && this.isInSyncMessage(msg) ) {
+    if (!this.utils.isCommitteeMember(this.cmap, msg.sender) && this.isInSyncMessage(msg) ) { // TODO will be accepted if message not in sync?
       this.utils.logger.warn(`Got message from non-committee member ${msg.sender}, committee is ${this.utils.getCommittee(this.cmap)}. Message = ${JSON.stringify(msg)}`);
+      return false;
     }
+
+    if (!this.utils.isCommitteeMember(this.cmap, this.utils.nodeNumber) && this.isInSyncMessage(msg)) {
+      this.utils.logger.warn(`Received message but I'm not a committee member`);
+      return false;
+    }
+
+
     if (msg.conMsgType != conMsgType) {
       this.utils.logger.debug(`Expected message of type ${conMsgType}, got message of type ${msg.conMsgType}`);
       return false;
@@ -295,6 +303,7 @@ export class ConsensusEngine {
    */
   @bind
   handlePrePrepareMessage(msg: Message): void {
+    // TODO validation should move to separate function and use isValidConMsg
     if (!this.isInSyncMessage(msg)) {
       this.pbftState.outOfSyncMessages.push(msg);
       return;
@@ -305,6 +314,7 @@ export class ConsensusEngine {
       return;
     }
     // if view > 1, make sure the preprepare message is identical to that in the NewView message
+    // TODO need to validate creator as well
     if (this.pbftState.view > 1) {
       if (this.pbftState.newViewMessages.length < (this.pbftState.view - 1) ) { // assuming all new view messages receieved
         this.utils.logger.error(`Didn't receive NewView message corresponding to ${JSON.stringify(msg)}, new view messages are ${JSON.stringify(this.pbftState.newViewMessages)}`);
@@ -313,13 +323,43 @@ export class ConsensusEngine {
         this.utils.logger.error(`Preprepare message ${JSON.stringify(msg)} doesn't correspond to NewView message ${JSON.stringify(this.pbftState.newViewMessages[this.pbftState.view - 1 - 1].newPrePrepMsg)}`);
       }
     }
+    else { // check creator matches leader of first view
+      if (!this.utils.isLeader(this.cmap, msg.eBlock.creator, this.pbftState.view)) {
+        this.utils.logger.warn(`Received pre-prepare EB created by ${msg.eBlock.creator}, expected from ${this.cmap[this.pbftState.view]}`);
+        return;
+      }
+    }
+
     if (!this.utils.isLeader(this.cmap, msg.sender, this.pbftState.view)) {
       this.utils.logger.warn(`Received pre-prepare message from ${msg.sender}, expected from ${this.cmap[this.pbftState.view]}`);
       return;
     }
+
+
+
     if (!this.isRepresentativeEBlock(msg.eBlock)) {
       return;
     }
+
+    if (!Utils.areCmapsEqual(this.cmap, msg.eBlock.cmap)) {
+      this.utils.logger.warn(`Locally computed cmap ${this.cmap} different than cmap ${msg.eBlock.cmap} received in block!`);
+      return;
+    }
+
+    if (!this.utils.isCommitteeMember(this.cmap, this.utils.nodeNumber) && this.isInSyncMessage(msg)) {
+      this.utils.logger.warn(`Received message but I'm not a committee member`);
+      return;
+    }
+
+    if ((this.blockchain.getLastBlock().encryptedBlock.hash != msg.eBlock.lastEBlockHash) || (this.blockchain.getLastBlock().decryptedBlock.hash != msg.eBlock.lastDBlockHash)) {
+      this.utils.logger.warn(`Received EB with pointer ${msg.eBlock.lastEBlockHash} to last EB and pointer ${msg.eBlock.lastDBlockHash} to last DB, but mine are ${this.blockchain.getLastBlock().encryptedBlock.hash} and ${this.blockchain.getLastBlock().decryptedBlock.hash}`);
+      return;
+    }
+
+
+
+
+
 
     this.utils.logger.debug(`Received pre-prepare message for block (${msg.eBlock.term},${msg.eBlock.hash}) from ${msg.sender}`);
     this.pbftState.candidateEBlock = msg.eBlock;
@@ -445,7 +485,7 @@ export class ConsensusEngine {
       if (msg.eBlock.term > this.term) this.utils.logger.warn(`Out of sync, at term ${this.term}, received committed block at term ${msg.eBlock.term}`);
       return false;
     }
-    if (!(this.utils.areCmapsEqual(msg.eBlock.cmap, this.cmap))) {
+    if (!(Utils.areCmapsEqual(msg.eBlock.cmap, this.cmap))) {
       this.utils.logger.warn(`Cmap mismatch, got ${msg.eBlock.cmap}, expected ${this.cmap}`);
       return false;
     }
