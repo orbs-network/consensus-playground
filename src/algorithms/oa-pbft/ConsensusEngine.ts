@@ -558,13 +558,13 @@ export class ConsensusEngine {
 
   @bind
   handleViewChangeMessage(msg: Message): void {
-    // TODO does block creator change for new view?
     // TODO validate message- check from committee, that prepares match the EB
     if (!this.isValidViewChangeMessage(msg)) {
       this.utils.logger.warn(`Invalid view change message! ${JSON.stringify(msg)}`);
     }
     if (!this.pbftState.collectingViewChangeMsgs) {
-      this.utils.logger.warn(`${msg.sender} thinks I'm new leader, but according to my state the new leader should be ${this.utils.getLeader(this.cmap, this.pbftState.view)} or ${this.utils.getLeader(this.cmap, this.pbftState.view + 1)}`);
+      if (this.utils.isLeader(this.cmap, this.utils.nodeNumber, this.pbftState.view) || this.utils.isLeader(this.cmap, this.utils.nodeNumber, this.pbftState.view + 1)) return;
+      else this.utils.logger.warn(`${msg.sender} thinks I'm new leader, but according to my state the new leader should be ${this.utils.getLeader(this.cmap, this.pbftState.view)} or ${this.utils.getLeader(this.cmap, this.pbftState.view + 1)}`);
       return;
     }
 
@@ -608,7 +608,7 @@ export class ConsensusEngine {
 
   @bind
   enterPrimaryChangeTakeover() {
-    this.utils.logger.log(`Received majority of ${this.countValidVotes(this.pbftState.viewChangeMessages)} votes out of ${this.utils.committeeSize}, entering new view.`);
+    this.utils.logger.log(`Received majority of ${this.countValidVotes(this.pbftState.viewChangeMessages)} votes out of ${this.utils.committeeSize}, assuming role as primary for view ${this.pbftState.view}.`);
     const vcMsgs: Message[] = this.pbftState.viewChangeMessages; // TODO make sure deep copy or will be erased when new view entered
     this.pbftState.collectingViewChangeMsgs = false; // TODO currently this means that if the next leader received 2f+1
     // messages before his own timeout expires, his own view change message will not be handled
