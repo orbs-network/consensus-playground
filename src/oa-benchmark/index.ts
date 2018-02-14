@@ -10,6 +10,7 @@ const fs = require("fs");
 const dir = "simulations/oa-benchmark-output";
 const now = new Date(Date.now());
 const outFile = `${dir}/benchmark_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.html`; // 2 types of ':' for some reason...
+
 function loadScenario(scenarioName: string): typeof OrbsScenarioWithNodeModule {
   try {
     return require(`./scenarios/${scenarioName}`).default;
@@ -26,8 +27,17 @@ function loadHonestNode(algorithmName: string): typeof NodeModule {
   }
 }
 
+function loadFaultyNode(algorithmName: string): typeof NodeModule {
+  try {
+    return require(`../algorithms/${algorithmName}`).FaultyNode;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 // create output directory for results, if it doesn't already exist
 fs.existsSync(dir) || fs.mkdirSync(dir);
+
 
 const output = new BenchmarkOutput();
 output.start();
@@ -40,10 +50,11 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
     const algorithmName = file.slice("src/algorithms/".length);
     console.log(`\n${algorithmName}\n`);
     const Node = loadHonestNode(algorithmName);
+    const FaultyNode = loadFaultyNode(algorithmName);
     const randomSeed = "benchmark";
     const configs = Scenario.configs();
     for (const config of configs) {
-      const scenario = new Scenario(randomSeed, Node, config);
+      const scenario = new Scenario(randomSeed, Node, FaultyNode, config);
       const configName = algorithmName + "/" + config.name;
       scenario.start();
       output.addAlgorithm(configName);
