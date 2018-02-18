@@ -25,7 +25,7 @@ export class Blockchain {
   @bind
   createGenesisBlock(numNodes: number): Block {
     // dummy entries for genesis block
-    const genesisEB: EncryptedBlock = { term: 0, content: GENESIS_CONTENT, hash: Utils.hashContent(GENESIS_CONTENT), lastEBlockHash: undefined, lastDBlockHash: undefined, creator: -1, cmap: new Cmap(numNodes) };
+    const genesisEB: EncryptedBlock = { term: 0, view: 1, content: GENESIS_CONTENT, hash: Utils.hashContent(GENESIS_CONTENT), lastEBlockHash: undefined, lastDBlockHash: undefined, creator: -1, cmap: new Cmap(numNodes) };
     const genesisDB: DecryptedBlock = { term: 0, content: GENESIS_CONTENT, hash: Utils.hashContent(GENESIS_CONTENT), lastEBlockHash: undefined, cmap: new Cmap(numNodes) };
     const genesisBlock: Block = { term: 0, encryptedBlock: genesisEB, decryptedBlock: genesisDB, blockProof: undefined };
     return genesisBlock;
