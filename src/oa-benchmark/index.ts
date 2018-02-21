@@ -9,7 +9,7 @@ import Statistics from "../simulation/Statistics";
 const fs = require("fs");
 const dir = "simulations/oa-benchmark-output";
 const now = new Date(Date.now());
-const outFile = `${dir}/benchmark_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.html`; // 2 types of ':' for some reason...
+
 function loadScenario(scenarioName: string): typeof OrbsScenarioWithNodeModule {
   try {
     return require(`./scenarios/${scenarioName}`).default;
@@ -40,6 +40,12 @@ fs.existsSync(dir) || fs.mkdirSync(dir);
 
 const output = new BenchmarkOutput();
 output.start();
+let outputToFile = false;
+if (process.argv[3] == "v") {
+  console.log(`verbose`);
+  outputToFile = true;
+}
+
 for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
   const scenarioName = file.slice("src/oa-benchmark/scenarios/".length, -3);
   const Scenario = loadScenario(scenarioName);
@@ -78,6 +84,6 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
   output.endScenario();
 }
 output.end();
-
+const outFile = (outputToFile) ? `${dir}/benchmark_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.html` : `${dir}/benchmark.html`; // 2 types of ':' for some reason...
 shell.echo(output.get()).to(outFile);
 shell.exec(`open ${outFile}`);
