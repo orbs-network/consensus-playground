@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal } from "./common";
 import * as Common from "./common";
-import Logger from "../../simulation/Logger";
+//import Logger from "../../simulation/Logger";
 import { Blockchain } from "./Blockchain";
 import { Decryptor } from "./Decryptor";
 import { Mempool } from "./Mempool";
@@ -118,7 +118,7 @@ export class ConsensusEngine {
       const eBlock: EncryptedBlock = this.createNewEBlock();
       // this.pbftState.candidateEBlock = eBlock;
       const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: eBlock, eBlockHash: eBlock.hash };
-      this.broadcastCommittee(prePrepMsg);
+      this.multicastCommittee(prePrepMsg);
       this.handlePrePrepareMessage(prePrepMsg); // "sending the message to ourselves" since handling is identical
 
     }
@@ -141,10 +141,8 @@ export class ConsensusEngine {
   }
 
   @bind
-  broadcastCommittee(msg: Message): void {
-    for ( const member of this.utils.getCommittee(this.cmap) ) {
-      this.netInterface.unicast(member, msg);
-    }
+  multicastCommittee(msg: Message): void { 
+    this.netInterface.multicast(this.utils.getCommittee(this.cmap), msg);
   }
 
 /**
@@ -370,7 +368,7 @@ export class ConsensusEngine {
       this.utils.logger.debug(`generating leader's prepare ${msg.sender}`);
       const leaderPrepareMsg: Message = { sender: msg.sender, type: "ConsensusMessage" + "/" + ConsensusMessageType.Prepare, conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
       this.updateEvidence(leaderPrepareMsg);
-      this.broadcastCommittee(prepareMsg);
+      this.multicastCommittee(prepareMsg);
     }
     this.handlePrepareMessage(prepareMsg);
     return;
@@ -430,7 +428,7 @@ export class ConsensusEngine {
     this.utils.logger.log(`Entering Prepared stage.`);
     this.pbftState.prepared = true;
     const commitMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Commit, conMsgType: ConsensusMessageType.Commit, view: this.pbftState.view, term: this.term, eBlockHash: this.pbftState.candidateEBlock.hash };
-    this.broadcastCommittee(commitMsg);
+    this.multicastCommittee(commitMsg);
     this.handleCommitMessage(commitMsg);
 
   }
@@ -474,7 +472,7 @@ export class ConsensusEngine {
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
     const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
-    this.netInterface.broadcast(committedMsg); // TODO replace with fast propagation protocol
+    //this.netInterface.broadcast(committedMsg); // TODO replace with fast propagation protocol - duplicate propagation - also in - handleCommittedMessage -> removed here 
     this.handleCommittedMessage(committedMsg);
   }
 
@@ -513,13 +511,14 @@ export class ConsensusEngine {
    * enter the decryption phase.
    */
   @bind
-  handleCommittedMessage(msg: Message): void {
+  handleCommittedMessage(msg: Message): void { // TODO separation between modules - decryptor
     if (!this.isValidCommittedMessage(msg)) {
       return;
     }
-    this.netInterface.broadcast(msg); // TODO replace with fast propagation protocol
-    this.decryptor.enterDecryptStage(msg.eBlock);
-
+    if (!this.decryptor.inDecryptingPhase()){
+      this.netInterface.fastcast(msg); // TODO replace with fast propagation protocol
+      this.decryptor.enterDecryptStage(msg.eBlock); 
+    }
   }
 
   @bind
@@ -670,7 +669,7 @@ export class ConsensusEngine {
     }
     const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: this.pbftState.candidateEBlock };
     const newViewMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.NewView, conMsgType: ConsensusMessageType.NewView, term: this.term, view: this.pbftState.view, viewChangeMsgs: vcMsgs, newPrePrepMsg: prePrepMsg };
-    this.broadcastCommittee(newViewMsg);
+    this.multicastCommittee(newViewMsg);
     this.handleNewViewMessage(newViewMsg); // "sending the message to ourselves" since handling is identical
 
   }

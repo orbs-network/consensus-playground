@@ -16,6 +16,7 @@ export default class Statistics {
   public totalReceivedMessagesPerNode: number[] = [];
   public totalSentBytes: number = 0;
   public totalBroadcasts: number = 0;
+  public totalMulticasts: number = 0;
   public totalUnicasts: number = 0;
   public shouldRecordMessagesByInterval = -1; // interval > 0 in ms if you want to record
   public recordedMessagesByInterval: RecordedMessagesInInterval[] = [];
