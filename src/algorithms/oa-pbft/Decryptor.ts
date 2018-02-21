@@ -100,17 +100,17 @@ export class Decryptor {
       return;
     }
 
-    let numPotentialSharesPrior = this.countPotentialShares(this.blockShares)
+    const numPotentialSharesPrior = this.countPotentialShares(this.blockShares);
     this.blockShares[blockShare.nodeNumber - 1] = blockShare;
-    let numPotentialSharesPost = this.countPotentialShares(this.blockShares)
+    const numPotentialSharesPost = this.countPotentialShares(this.blockShares);
     this.utils.logger.log(`Received share from ${blockShare.nodeNumber} for block (${blockShare.term},${blockShare.blockHash}, status is ${this.getShareStatusString()})`);
 
-    if ((numPotentialSharesPost <= this.utils.sharingThreshold) && (numPotentialSharesPrior < numPotentialSharesPost)) { // forward only unseen shares - even unverified up until threshold, including  
-      this.netInterface.fastcast(blockShare)
+    if ((numPotentialSharesPost <= this.utils.sharingThreshold) && (numPotentialSharesPrior < numPotentialSharesPost)) { // forward only unseen shares - even unverified up until threshold, including
+      this.netInterface.fastcast(blockShare);
     }
-   
-    if (numPotentialSharesPost < this.utils.sharingThreshold) { //  try to generate blockshare 
-      this.generateShareBlock(this.committedEBtoDecrypt);  
+
+    if (numPotentialSharesPost < this.utils.sharingThreshold) { //  try to generate blockshare
+      this.generateShareBlock(this.committedEBtoDecrypt);
     }
 
     if ( (this.countShares(this.blockShares, ShareStatus.Valid) >= this.utils.sharingThreshold)) { // not else since generateShareBlock may have added to number of shares available

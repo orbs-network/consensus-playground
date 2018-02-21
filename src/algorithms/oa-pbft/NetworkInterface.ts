@@ -5,7 +5,6 @@ import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 
 import { Utils, Message } from "./common";
-//import Logger from "../../simulation/Logger";
 import BaseEvent from "../../simulation/BaseEvent";
 import BaseConnection from "../../simulation/BaseConnection";
 import BaseScenario from "../../simulation/BaseScenario";
@@ -16,7 +15,7 @@ import bind from "bind-decorator";
 
 
 
-const fillRangeModulo = (start, end, cap) => { 
+const fillRangeModulo = (start, end, cap) => {
   return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap + 1); // second +1 -> return to nodes' ids
 };
 export class NetworkInterface implements Endpoint {
@@ -28,10 +27,8 @@ export class NetworkInterface implements Endpoint {
   public nodeNumber: number;
   protected scenario: BaseScenario;
   public outgoingConnections: BaseConnection[] = [];
-
-  //protected logger: Logger;
   protected utils: Utils;
-  
+
   constructor(nodeNumber: number, outgoingConnections: BaseConnection[], mempoolHandler: MempoolHandler, blockchainHandler: BlockchainHandler, cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils) {
     this.nodeNumber = nodeNumber;
     this.outgoingConnections = outgoingConnections;
@@ -39,11 +36,8 @@ export class NetworkInterface implements Endpoint {
     this.blockchainHandler = blockchainHandler;
     this.cryptoHandler = cryptoHandler;
     this.consensusHandler = consensusHandler;
-    //this.scenario = scenario;
-    //this.nodeNumber = nodeNumber;
-    //this.logger = logger;
     this.utils = utils;
-    
+
   }
 
   @bind
@@ -52,12 +46,12 @@ export class NetworkInterface implements Endpoint {
       this.onMessage(event);
     }
   }
- 
+
 
 /**
- * 
- * 
- * @param {MessageEvent} event 
+ *
+ *
+ * @param {MessageEvent} event
  */
 @bind
   onMessage(event: MessageEvent): void {
@@ -94,20 +88,19 @@ export class NetworkInterface implements Endpoint {
 
 
 /**
- * send message to multiple recipients 
- * avoids duplicates 
- * @param {number[]} toNodeNumber 
- * @param {*} message 
+ * send message to multiple recipients
+ * avoids duplicates
+ * @param {number[]} toNodeNumber
+ * @param {*} message
  */
 @bind
-  multicast(toNodeNumber: number[], message: any): void { 
-    // 
-    let allNodesTo : number[] = new Array(this.utils.numNodes).fill(0);
+  multicast(toNodeNumber: number[], message: any): void {
+    const allNodesTo: number[] = new Array(this.utils.numNodes).fill(0);
     for (const to of toNodeNumber) {
-      allNodesTo[to - 1] = 1 // nodes ids run from 1..
+      allNodesTo[to - 1] = 1; // nodes ids run from 1..
     }
     for (const connection of this.outgoingConnections) {
-      if (allNodesTo[connection.to.nodeNumber - 1]){
+      if (allNodesTo[connection.to.nodeNumber - 1]) {
         connection.send(message);
         this.utils.scenario.statistics.totalSentMessages++;
         this.utils.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
@@ -134,30 +127,23 @@ export class NetworkInterface implements Endpoint {
   }
 
   @bind
-  getForwardTree(mapping: number[]): number[][]{
-    let tree: number[][];
-    return tree;
-  }
-
-  @bind
-  fastcast(message: any, mapping?: number[]): void { 
-    if (!mapping){
-      let mapping: number[] = Array.from(new Array(this.utils.numNodes),(val,index)=>index+1);
+  fastcast(message: any, mapping?: number[]): void {
+    if (!mapping) {
+      const mapping: number[] = Array.from(new Array(this.utils.numNodes), (val, index) => index + 1);
     }
     const vertex =  Math.floor(mapping.indexOf(this.nodeNumber) / (this.utils.numByz + 1)); // current node index according to mapping
-    const numGroups = Math.ceil(mapping.length/ (this.utils.numByz + 1));   // number of f+1 groups
+    const numGroups = Math.ceil(mapping.length / (this.utils.numByz + 1));   // number of f+1 groups
     const leftStart = ((vertex << 1) + 1) % numGroups;  // send to groups with indices leftStart and rightStart
-    const rightStart = (leftStart + 1) % numGroups; 
+    const rightStart = (leftStart + 1) % numGroups;
     let toNodeNumber = fillRangeModulo(leftStart * (this.utils.numByz + 1), (leftStart + 1) * (this.utils.numByz + 1) , mapping.length);  // generate array of nodes ids accordingly
     toNodeNumber = toNodeNumber.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), (rightStart + 1) * (this.utils.numByz + 1) , mapping.length));
-    // do not send to 'this' node  
-    let index = toNodeNumber.indexOf(this.nodeNumber, 0);
+    // do not send to 'this' node
+    const index = toNodeNumber.indexOf(this.nodeNumber, 0);
     if (index > -1) {
        toNodeNumber.splice(index, 1);
     }
-    this.multicast(toNodeNumber, message); 
+    this.multicast(toNodeNumber, message);
   }
- 
 
 }
 

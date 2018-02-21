@@ -46,7 +46,7 @@ export default class FaultyNode extends BaseNode {
     this.timer = new Timer();
 
     this.decryptor = new Decryptor();
-    this.netInterface = new NetworkInterface(this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.nodeNumber, this.scenario, this.logger);
+    this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils);
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
 
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);

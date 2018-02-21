@@ -1,7 +1,7 @@
 import * as _ from "lodash";
-import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal } from "./common";
+import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal, BlockShare } from "./common";
 import * as Common from "./common";
-//import Logger from "../../simulation/Logger";
+// import Logger from "../../simulation/Logger";
 import { Blockchain } from "./Blockchain";
 import { Decryptor } from "./Decryptor";
 import { Mempool } from "./Mempool";
@@ -141,7 +141,7 @@ export class ConsensusEngine {
   }
 
   @bind
-  multicastCommittee(msg: Message): void { 
+  multicastCommittee(msg: Message): void {
     this.netInterface.multicast(this.utils.getCommittee(this.cmap), msg);
   }
 
@@ -191,7 +191,7 @@ export class ConsensusEngine {
   createNewEBlock(): EncryptedBlock {
     const randomContent = this.mempool.generateContent();
     const contentHash: string = Utils.hashContent(randomContent);
-    const eBlock: EncryptedBlock = { term: this.term, content: randomContent, hash: contentHash, lastEBlockHash: this.blockchain.getLastBlock().encryptedBlock.hash, lastDBlockHash: this.blockchain.getLastBlock().decryptedBlock.hash, creator: this.nodeNumber, cmap: this.cmap };
+    const eBlock: EncryptedBlock = { term: this.term, view: this.pbftState.view, content: randomContent, hash: contentHash, lastEBlockHash: this.blockchain.getLastBlock().encryptedBlock.hash, lastDBlockHash: this.blockchain.getLastBlock().decryptedBlock.hash, creator: this.nodeNumber, cmap: this.cmap };
     return eBlock;
   }
 
@@ -467,12 +467,12 @@ export class ConsensusEngine {
 
   /**
    * Propogate block proof in the form of a CommittedMessage, using fast block
-   * propogation protocol  
+   * propogation protocol
    */
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
     const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
-    //this.netInterface.broadcast(committedMsg); // TODO replace with fast propagation protocol - duplicate propagation - also in - handleCommittedMessage -> removed here 
+    // this.netInterface.broadcast(committedMsg); // TODO replace with fast propagation protocol - duplicate propagation - also in - handleCommittedMessage -> removed here
     this.handleCommittedMessage(committedMsg);
   }
 
@@ -515,16 +515,15 @@ export class ConsensusEngine {
     if (!this.isValidCommittedMessage(msg)) {
       return;
     }
-    if (!this.decryptor.inDecryptingPhase()){ // since node only enters phase once per term -> also send once
+    if (!this.decryptor.inDecryptingPhase()) { // since node only enters phase once per term -> also send once
       this.netInterface.fastcast(msg); // TODO replace with fast propagation protocol
-      this.decryptor.enterDecryptStage(msg.eBlock); 
+      this.decryptor.enterDecryptStage(msg.eBlock);
     }
   }
 
   @bind
-  createBlock(eBlock: EncryptedBlock, dBlock: DecryptedBlock, blockProof: BlockProof): Block {
-    const block: Block = { term: eBlock.term, encryptedBlock: eBlock, decryptedBlock: dBlock, blockProof: blockProof };
-
+  createBlock(eBlock: EncryptedBlock, dBlock: DecryptedBlock, blockProof: BlockProof, blockShares: BlockShare[]): Block {
+    const block: Block = { term: eBlock.term, encryptedBlock: eBlock, decryptedBlock: dBlock, blockProof: blockProof, blockShares: blockShares };
     return block;
   }
 
@@ -533,9 +532,11 @@ export class ConsensusEngine {
    * New block can be added to block chain and a new term entered.
    */
   @bind
-  handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock): void {
+  handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock, blockShares: BlockShare[]): void {
     this.utils.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
-    this.blockchain.addBlock(this.createBlock(eBlock, dBlock, this.pbftState.blockProof));
+    const block = this.createBlock(eBlock, dBlock, this.pbftState.blockProof, blockShares);
+    this.blockchain.addBlock(block);
+    this.utils.logger.debug(`Added block ${JSON.stringify(block)} to blockchain...`);
     this.enterNewTerm(dBlock);
   }
 
