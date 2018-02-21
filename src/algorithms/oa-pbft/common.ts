@@ -49,6 +49,7 @@ export interface BlockProof {
 
 export interface EncryptedBlock {
   term: number;
+  view: number;
   content: number;
   hash: string;
   lastEBlockHash: string;
@@ -70,7 +71,7 @@ export interface Block {
   encryptedBlock: EncryptedBlock;
   decryptedBlock: DecryptedBlock;
   blockProof: BlockProof;
-  // TODO add shares
+  blockShares: BlockShare[];
 }
 
 export interface Proposal {
@@ -83,6 +84,7 @@ export interface Proposal {
 export interface Message {
   type: string;
   sender: number;
+  receipient?: number;
   term?: number;
   view?: number;
   block?: Block;
@@ -116,7 +118,6 @@ export class Utils {
 
   // number of nodes, committee size and number of Byzantine nodes are handled by
   // the Node since the number of nodes is only determined after the scenario generates them.
-  // TODO in the future it should be handled by the scenario
   constructor(scenario: BaseScenario, nodeNumber: number, logger: Logger) {
     this.scenario = scenario;
     this.nodeNumber = nodeNumber;
@@ -131,6 +132,12 @@ export class Utils {
   static isAByzMajOfB(a: number, b: number): boolean {
     return (a >= Math.ceil(BYZ_MAJORITY * b));
   }
+
+  // returns true if a >= (2 * f + 1)
+  static isAByzMajWrtF(a: number, f: number): boolean {
+    return (a >= (2 * f) + 1);
+  }
+
 
   static areMessagesEqual(msg1: Message, msg2: Message): boolean {
     return (JSON.stringify(msg1) == JSON.stringify(msg2));
@@ -156,7 +163,7 @@ export class Utils {
 
   @bind
   isByzMaj(num: number): boolean {
-    return Utils.isAByzMajOfB(num, this.numNodes);
+    return Utils.isAByzMajWrtF(num, this.numByz);
   }
 
   @bind

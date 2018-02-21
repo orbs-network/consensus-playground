@@ -68,7 +68,7 @@ export default class HonestNode extends BaseNode {
       this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
       this.utils.committeeSize = this.scenario.numNodes; // TODO this should be fraction of total number of nodes, just for benchmark purposes
       // default values
-      this.utils.numByz = 0;
+      this.utils.numByz = Math.floor(this.scenario.numNodes / 3);
       this.utils.sharingThreshold = this.utils.numByz + 1;
     }
 

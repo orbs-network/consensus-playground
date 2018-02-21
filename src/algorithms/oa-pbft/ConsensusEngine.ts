@@ -467,7 +467,7 @@ export class ConsensusEngine {
 
   /**
    * Propogate block proof in the form of a CommittedMessage, using fast block
-   * propogation protocol (future)
+   * propogation protocol  
    */
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
@@ -515,7 +515,7 @@ export class ConsensusEngine {
     if (!this.isValidCommittedMessage(msg)) {
       return;
     }
-    if (!this.decryptor.inDecryptingPhase()){
+    if (!this.decryptor.inDecryptingPhase()){ // since node only enters phase once per term -> also send once
       this.netInterface.fastcast(msg); // TODO replace with fast propagation protocol
       this.decryptor.enterDecryptStage(msg.eBlock); 
     }

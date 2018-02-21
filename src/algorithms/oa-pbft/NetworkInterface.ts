@@ -16,8 +16,8 @@ import bind from "bind-decorator";
 
 
 
-const fillRangeModulo = (start, end, cap) => {
-  return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap);
+const fillRangeModulo = (start, end, cap) => { 
+  return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap + 1); // second +1 -> return to nodes' ids
 };
 export class NetworkInterface implements Endpoint {
 
@@ -52,8 +52,14 @@ export class NetworkInterface implements Endpoint {
       this.onMessage(event);
     }
   }
+ 
 
-  @bind
+/**
+ * 
+ * 
+ * @param {MessageEvent} event 
+ */
+@bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
     switch (msg.type) {
@@ -85,8 +91,17 @@ export class NetworkInterface implements Endpoint {
     this.scenario.statistics.totalBroadcasts++;
   }
 
-  @bind
-  multicast(toNodeNumber: number[], message: any): void {
+
+
+/**
+ * send message to multiple recipients 
+ * avoids duplicates 
+ * @param {number[]} toNodeNumber 
+ * @param {*} message 
+ */
+@bind
+  multicast(toNodeNumber: number[], message: any): void { 
+    // 
     let allNodesTo : number[] = new Array(this.utils.numNodes).fill(0);
     for (const to of toNodeNumber) {
       allNodesTo[to - 1] = 1 // nodes ids run from 1..
@@ -125,16 +140,21 @@ export class NetworkInterface implements Endpoint {
   }
 
   @bind
-  fastcast(message: any, mapping?: number[]): void {
+  fastcast(message: any, mapping?: number[]): void { 
     if (!mapping){
       let mapping: number[] = Array.from(new Array(this.utils.numNodes),(val,index)=>index+1);
     }
     const vertex =  Math.floor(mapping.indexOf(this.nodeNumber) / (this.utils.numByz + 1)); // current node index according to mapping
-    const numGroups = Math.ceil(mapping.length/ (this.utils.numByz + 1));
-    const leftStart = ((vertex << 1) + 1) % numGroups;
+    const numGroups = Math.ceil(mapping.length/ (this.utils.numByz + 1));   // number of f+1 groups
+    const leftStart = ((vertex << 1) + 1) % numGroups;  // send to groups with indices leftStart and rightStart
     const rightStart = (leftStart + 1) % numGroups; 
-    let toNodeNumber = fillRangeModulo(leftStart * (this.utils.numByz + 1), rightStart * (this.utils.numByz + 1) , numGroups);
-    toNodeNumber = toNodeNumber.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), (rightStart + 1) * (this.utils.numByz + 1) , numGroups));
+    let toNodeNumber = fillRangeModulo(leftStart * (this.utils.numByz + 1), (leftStart + 1) * (this.utils.numByz + 1) , mapping.length);  // generate array of nodes ids accordingly
+    toNodeNumber = toNodeNumber.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), (rightStart + 1) * (this.utils.numByz + 1) , mapping.length));
+    // do not send to 'this' node  
+    let index = toNodeNumber.indexOf(this.nodeNumber, 0);
+    if (index > -1) {
+       toNodeNumber.splice(index, 1);
+    }
     this.multicast(toNodeNumber, message); 
   }
  

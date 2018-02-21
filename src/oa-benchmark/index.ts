@@ -50,7 +50,7 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
     console.log(`\n${algorithmName}\n`);
     const Node = loadHonestNode(algorithmName);
     const FaultyNode = loadFaultyNode(algorithmName);
-    const randomSeed = "benchmark";
+    const randomSeed = "benchmark4";
     const configs = Scenario.configs();
     for (const config of configs) {
       const scenario = new Scenario(randomSeed, Node, FaultyNode, config);

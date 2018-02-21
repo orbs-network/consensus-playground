@@ -29,6 +29,11 @@ export class Timer implements Endpoint {
   }
 
   @bind
+  stopTimer(): void {
+    this.proposalTimeoutEvent = undefined;
+  }
+
+  @bind
   setProposalTimer(duration: number): void {
     if (this.proposalTimeoutEvent) {
       this.logger.debug(`Existing timer already set to expire at ${this.proposalTimeoutEvent.timestamp}, resetting it!`);
@@ -73,7 +78,7 @@ export class Timer implements Endpoint {
       case "ProposalTimeoutExpired": {
         // if this is an old timer expiring we ignore it. Ideally, we would have removed the old event
         // from the scenario event queue but the PriorityQueue api doesn't support this.
-        if (this.proposalTimeoutEvent.isSameEvent(event)) this.consensusEngine.handleProposalExpiredTimeout();
+        if (this.proposalTimeoutEvent && this.proposalTimeoutEvent.isSameEvent(event)) this.consensusEngine.handleProposalExpiredTimeout();
         break;
       }
       case "SleepTimeoutExpired": {
