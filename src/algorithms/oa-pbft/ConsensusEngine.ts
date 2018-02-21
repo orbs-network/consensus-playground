@@ -246,11 +246,11 @@ export class ConsensusEngine {
    * @return {number} - number of true/existing objects is returned
    */
   @bind
-  countValidVotes(voteArr: any[]): number {
+  countValidVotes(voteArr: any[], cmap: Cmap): number {
     let count = 0;
     for (let i = 0; i < voteArr.length; i++) {
       if (voteArr[i]) {
-        if (this.utils.isCommitteeMember(this.cmap, i + 1)) {
+        if (this.utils.isCommitteeMember(cmap, i + 1)) {
           count += 1;
         }
         else {
@@ -265,11 +265,12 @@ export class ConsensusEngine {
    * Given array of proposals or boolean indicator array, check if votes constitute a
    * 2/3+ majority. Assuming validity of the proposals.
    * @param VoteArr - array of booleans or general objects
+   * @param cmap - committee map
    * @return {number} - number of true/existing objects is returned
    */
   @bind
-  isValidByzMajorityVote(voteArr: any[]): boolean { // any to allow use with arrays of objects as well
-    return this.utils.isByzMaj(this.countValidVotes(voteArr));
+  isValidByzMajorityVote(voteArr: any[], cmap: Cmap): boolean { // any to allow use with arrays of objects as well
+    return this.utils.isByzMaj(this.countValidVotes(voteArr, cmap));
   }
 
   @bind
@@ -506,6 +507,8 @@ export class ConsensusEngine {
     this.utils.logger.debug(`Received pre-prepare message for block (${msg.eBlock.term},${msg.eBlock.hash}) from ${msg.sender}`);
     this.pbftState.candidateEBlock = msg.eBlock;
     this.pbftState.progress = State.Prepared;
+    this.pbftState.blockProof.term = msg.eBlock.term;
+    this.pbftState.blockProof.hash = msg.eBlock.hash;
 
     const prepareMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Prepare, conMsgType: ConsensusMessageType.Prepare, term: this.term, view: this.pbftState.view, eBlockHash: msg.eBlock.hash };
     if (!this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) { // shortcut, committee members that receive pre-prepare should generate the corresponding prepare msg from the leader
@@ -535,8 +538,8 @@ export class ConsensusEngine {
     }
 
     this.updateEvidence(msg);
-    this.utils.logger.debug(`Received ${this.countValidVotes(this.pbftState.blockProof.prepares)} votes out of ${this.pbftState.blockProof.prepares.length}, is ${this.pbftState.blockProof.prepares}, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
-    if (this.isValidByzMajorityVote(this.pbftState.blockProof.prepares) && this.pbftState.candidateEBlock && !this.pbftState.prepared) {
+    this.utils.logger.debug(`Received ${this.countValidVotes(this.pbftState.blockProof.prepares, this.cmap)} votes out of ${this.pbftState.blockProof.prepares.length}, is ${this.pbftState.blockProof.prepares}, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
+    if (this.isValidByzMajorityVote(this.pbftState.blockProof.prepares, this.cmap) && this.pbftState.candidateEBlock && !this.pbftState.prepared) {
       this.enterPrepared();
     }
   }
@@ -594,7 +597,7 @@ export class ConsensusEngine {
       return;
     }
     this.updateEvidence(msg);
-    if (this.isValidByzMajorityVote(this.pbftState.blockProof.commits) && this.pbftState.prepared) {
+    if (this.isValidByzMajorityVote(this.pbftState.blockProof.commits, this.cmap) && this.pbftState.prepared) {
       this.enterCommit();
     }
 
@@ -626,24 +629,35 @@ export class ConsensusEngine {
 
   @bind
   isValidCommittedMessage(msg: Message): boolean {
+    if (msg.eBlock.hash != msg.blockProof.hash) {
+      this.utils.logger.warn(`Block hash ${msg.eBlock.hash} doesn't match block proof hash ${msg.blockProof.hash}`);
+      return false;
+    }
+    if (msg.eBlock.term != msg.blockProof.term) {
+      this.utils.logger.warn(`Block term ${msg.eBlock.term} doesn't match block proof term ${msg.blockProof.term}`);
+      return false;
+    }
     if (!(msg.eBlock.term == this.term)) {
-      // TODO handle node out of sync
-      if (msg.eBlock.term > this.term) this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
-      return false;
+      if (msg.eBlock.term > this.term) {
+        this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
+        // TODO handle node out of sync - we can use fast sync to validate message even if we aren't in sync
+        // TODO if we are in sync is there reason to do full validation?
+      }
+      else return false; // old message, ignore it
     }
-    if (!(Utils.areCmapsEqual(msg.eBlock.cmap, this.cmap))) {
-      this.utils.logger.warn(`Cmap mismatch, got ${msg.eBlock.cmap}, expected ${this.cmap}`);
-      return false;
-    }
-    if (!this.utils.isCommitteeMember(this.cmap, msg.eBlock.creator)) {
+
+    // fast sync-  a correct node needs only to verify that all the signers appearing in BP are indeed committee members according to the header of corresponding EB
+    const cmap = msg.eBlock.cmap;
+    // TODO abstracting away some details- need to validate the messages themselves, not just the boolean arrays.
+    if (!this.utils.isCommitteeMember(cmap, msg.eBlock.creator)) {
       this.utils.logger.warn(`Block creator ${msg.eBlock.creator} not in committee!`);
       return false;
     }
-    if (!(this.isValidByzMajorityVote(msg.blockProof.prepares))) {
+    if (!(this.isValidByzMajorityVote(msg.blockProof.prepares, cmap))) {
       this.utils.logger.warn(`Missing prepare messages!`);
       return false;
     }
-    if (!(this.isValidByzMajorityVote(msg.blockProof.commits))) {
+    if (!(this.isValidByzMajorityVote(msg.blockProof.commits, cmap))) {
       this.utils.logger.warn(`Missing commit messages!`);
       return false;
     }
@@ -651,6 +665,7 @@ export class ConsensusEngine {
       this.utils.logger.warn(`Block not committed!`);
       return false;
     }
+
     return true;
   }
 
@@ -710,7 +725,7 @@ export class ConsensusEngine {
     // if proposal already reached Prepared state, send the evidence and proposed
     // block as part of the view change message.
     if (this.pbftState.prepared) {
-      if (!this.isValidByzMajorityVote(this.pbftState.blockProof.prepares)) this.utils.logger.error(`In prepared state but don't have 2f+1 prepare messages!`);
+      if (!this.isValidByzMajorityVote(this.pbftState.blockProof.prepares, this.cmap)) this.utils.logger.error(`In prepared state but don't have 2f+1 prepare messages!`);
       proposal = { term: this.term, view: this.pbftState.view, candidateEBlock: this.pbftState.candidateEBlock, prepMessages: this.pbftState.prepMessages };
     }
     // update view, move to next leader
@@ -826,7 +841,7 @@ export class ConsensusEngine {
     }
     this.utils.logger.debug(`Accepted ViewChange message ${JSON.stringify(msg)}`);
     this.updateEvidence(msg);
-    if (this.isValidByzMajorityVote(this.pbftState.viewChangeMessages)) {
+    if (this.isValidByzMajorityVote(this.pbftState.viewChangeMessages, this.cmap)) {
         this.enterPrimaryChangeTakeover();
     }
 
@@ -854,7 +869,7 @@ export class ConsensusEngine {
 
   @bind
   enterPrimaryChangeTakeover() {
-    this.utils.logger.log(`Received ${this.countValidVotes(this.pbftState.viewChangeMessages)} votes, needed  ${this.utils.numByz * 2 + 1}, assuming role as primary for view ${this.pbftState.view}.`);
+    this.utils.logger.log(`Received ${this.countValidVotes(this.pbftState.viewChangeMessages, this.cmap)} votes, needed  ${this.utils.numByz * 2 + 1}, assuming role as primary for view ${this.pbftState.view}.`);
     const vcMsgs: Message[] = this.pbftState.viewChangeMessages; // TODO make sure deep copy or will be erased when new view entered
     this.pbftState.collectingViewChangeMsgs = false; // TODO currently this means that if the next leader received 2f+1
     // messages before his own timeout expires, his own view change message will not be handled
