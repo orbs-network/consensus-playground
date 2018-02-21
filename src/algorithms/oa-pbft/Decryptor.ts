@@ -84,7 +84,7 @@ export class Decryptor {
   finishDecryptionPhase(): void {
     if (this.committedEBtoDecrypt) {
       this.utils.logger.log(`Status is ${this.getShareStatusString()}, decrypting block!`);
-      this.consensusEngine.handleBlockDecrypted(this.decrypt(this.committedEBtoDecrypt, this.blockShares), this.committedEBtoDecrypt);
+      this.consensusEngine.handleBlockDecrypted(this.decrypt(this.committedEBtoDecrypt, this.blockShares), this.committedEBtoDecrypt, this.blockShares);
       this.reset(); // finished work on this EB
     }
     else {

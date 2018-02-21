@@ -71,7 +71,7 @@ export interface Block {
   encryptedBlock: EncryptedBlock;
   decryptedBlock: DecryptedBlock;
   blockProof: BlockProof;
-  // TODO add shares
+  blockShares: BlockShare[];
 }
 
 export interface Proposal {

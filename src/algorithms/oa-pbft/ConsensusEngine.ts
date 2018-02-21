@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal } from "./common";
+import { Message, Cmap, Utils, Block, EncryptedBlock, DecryptedBlock, BlockProof, ConsensusMessageType, Proposal, BlockShare } from "./common";
 import * as Common from "./common";
 import Logger from "../../simulation/Logger";
 import { Blockchain } from "./Blockchain";
@@ -670,7 +670,7 @@ export class ConsensusEngine {
   }
 
   /**
-   * Upon receiving a CommittedMessage, propogate the encrypted block and proof,
+   * Upon receiving a CommittedMessage, propagate the encrypted block and proof,
    * enter the decryption phase.
    */
   @bind
@@ -684,9 +684,8 @@ export class ConsensusEngine {
   }
 
   @bind
-  createBlock(eBlock: EncryptedBlock, dBlock: DecryptedBlock, blockProof: BlockProof): Block {
-    const block: Block = { term: eBlock.term, encryptedBlock: eBlock, decryptedBlock: dBlock, blockProof: blockProof };
-
+  createBlock(eBlock: EncryptedBlock, dBlock: DecryptedBlock, blockProof: BlockProof, blockShares: BlockShare[]): Block {
+    const block: Block = { term: eBlock.term, encryptedBlock: eBlock, decryptedBlock: dBlock, blockProof: blockProof, blockShares: blockShares };
     return block;
   }
 
@@ -695,9 +694,11 @@ export class ConsensusEngine {
    * New block can be added to block chain and a new term entered.
    */
   @bind
-  handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock): void {
+  handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock, blockShares: BlockShare[]): void {
     this.utils.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
-    this.blockchain.addBlock(this.createBlock(eBlock, dBlock, this.pbftState.blockProof));
+    const block = this.createBlock(eBlock, dBlock, this.pbftState.blockProof, blockShares);
+    this.blockchain.addBlock(block);
+    this.utils.logger.debug(`Added block ${JSON.stringify(block)} to blockchain...`);
     this.enterNewTerm(dBlock);
   }
 
@@ -782,10 +783,7 @@ export class ConsensusEngine {
     // 2. on either same view or one behind.
     if (!this.isMessageInSync(msg)) return false; // TODO syncer should handle if needed?
     if (!this.isValidCommitteeMessage(msg)) return false;
-
-
     if (!this.utils.isLeader(this.cmap, msg.receipient, msg.view)) return false;
-
 
     // validate proposal
     if (!msg.proposal) return true; // no proposal in the view change message, this is ok
