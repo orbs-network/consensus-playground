@@ -10,6 +10,7 @@ import { MempoolHandler } from "./MempoolHandler";
 import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
+import { Syncer } from "./Syncer";
 
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
@@ -31,6 +32,7 @@ export default class HonestNode extends BaseNode {
   protected blockchainHandler: BlockchainHandler;
   protected consensusHandler: ConsensusHandler;
   protected cryptoHandler: CryptoHandler;
+  protected syncer: Syncer;
   protected timer: Timer;
   public netInterface: NetworkInterface;
 
@@ -49,8 +51,10 @@ export default class HonestNode extends BaseNode {
 
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
-    this.blockchainHandler = new BlockchainHandler();
+    this.blockchainHandler = new BlockchainHandler(this.blockchain);
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
+
+    this.syncer = new Syncer(this.mempoolHandler, this.blockchainHandler, this.consensusHandler, this.cryptoHandler, this.netInterface, this.utils);
 
 
   }
@@ -76,6 +80,7 @@ export default class HonestNode extends BaseNode {
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
     this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
     this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz);
+    this.syncer.init();
   }
 
   @bind
@@ -100,6 +105,10 @@ export default class HonestNode extends BaseNode {
       }
       case "CryptoMessage": {
         this.cryptoHandler.handleMessage(msg);
+        break;
+      }
+      case "SyncMessage": {
+        this.syncer.handleMessage(msg);
         break;
       }
 

@@ -26,6 +26,11 @@ export enum CryptoMessageType {
   BlockShare = "BlockShare"
 }
 
+export enum SyncerMessageType {
+  RequestSync = "RequestSync",
+  SyncPeer = "SyncPeer"
+}
+
 export class Cmap {
   public order: number[];
 
@@ -97,7 +102,9 @@ export interface Message {
   viewChangeMsgs?: Message[];
   newPrePrepMsg?: Message;
   cryptoMsgType?: CryptoMessageType;
+  syncerMsgType?: SyncerMessageType;
   blockShare?: BlockShare;
+  blocks?: Block[];
 
 }
 

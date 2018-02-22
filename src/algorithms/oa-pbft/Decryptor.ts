@@ -116,9 +116,13 @@ export class Decryptor {
   @bind
   generateShareBlock(eBlock: EncryptedBlock): BlockShare {
     let newShare: BlockShare = undefined;
+    if (eBlock && this.consensusEngine.getTerm() != eBlock.term ) {
+      this.utils.logger.debug(`Can't generate share for block ${eBlock.term}, at term ${this.consensusEngine.getTerm()}`);
+      return undefined;
+    }
     if (eBlock && !this.blockShares[this.utils.nodeNumber - 1] && this.countPotentialShares(this.blockShares) < this.utils.sharingThreshold ) {
       this.utils.logger.log(`Status is ${this.getShareStatusString()}. Generating block share`);
-      newShare = { blockHash: eBlock.hash, term: this.consensusEngine.getTerm(), nodeNumber: this.utils.nodeNumber };
+      newShare = { blockHash: eBlock.hash, term: eBlock.term, nodeNumber: this.utils.nodeNumber };
       this.blockShares[this.utils.nodeNumber - 1] = newShare;
       const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
       this.netInterface.broadcast(shareMsg); // TODO fast forwarding scheme

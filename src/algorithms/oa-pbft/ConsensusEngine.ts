@@ -628,7 +628,7 @@ export class ConsensusEngine {
   }
 
   @bind
-  isValidCommittedMessage(msg: Message): boolean {
+  isValidCommittedMessage(msg: Message, fastSyncing: boolean = false): boolean {
     if (msg.eBlock.hash != msg.blockProof.hash) {
       this.utils.logger.warn(`Block hash ${msg.eBlock.hash} doesn't match block proof hash ${msg.blockProof.hash}`);
       return false;
@@ -642,6 +642,7 @@ export class ConsensusEngine {
         this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
         // TODO handle node out of sync - we can use fast sync to validate message even if we aren't in sync
         // TODO if we are in sync is there reason to do full validation?
+        if (!fastSyncing) return false;
       }
       else return false; // old message, ignore it
     }
@@ -697,9 +698,14 @@ export class ConsensusEngine {
   handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock, blockShares: BlockShare[]): void {
     this.utils.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
     const block = this.createBlock(eBlock, dBlock, this.pbftState.blockProof, blockShares);
+    this.handleNewBlock(block);
+  }
+
+  @bind
+  handleNewBlock(block: Block): void {
     this.blockchain.addBlock(block);
     this.utils.logger.debug(`Added block ${JSON.stringify(block)} to blockchain...`);
-    this.enterNewTerm(dBlock);
+    this.enterNewTerm(block.decryptedBlock);
   }
 
   @bind

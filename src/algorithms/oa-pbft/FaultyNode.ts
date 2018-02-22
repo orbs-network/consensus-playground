@@ -51,7 +51,7 @@ export default class FaultyNode extends BaseNode {
 
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
-    this.blockchainHandler = new BlockchainHandler();
+    this.blockchainHandler = new BlockchainHandler(this.blockchain);
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
 
 
@@ -103,7 +103,7 @@ export default class FaultyNode extends BaseNode {
 
   @bind
   setTimeout(timeoutMs: number, message: any): void {
-    this.timer.setTimeout(timeoutMs, message);
+    // this.timer.setTimeout(timeoutMs, message);
   }
 
   @bind

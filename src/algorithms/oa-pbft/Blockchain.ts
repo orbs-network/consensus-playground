@@ -37,6 +37,12 @@ export class Blockchain {
   }
 
   @bind
+  getBlocksRange(start: number, end?: number): Block[] {
+    const e = end ? end : this.getLastBlock().term;
+    return this.closedBlocks.slice(start, e + 1);
+  }
+
+  @bind
   getLastBlock(): Block {
     return this.closedBlocks[(this.closedBlocks.length - 1)];
   }
