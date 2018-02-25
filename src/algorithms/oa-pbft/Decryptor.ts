@@ -124,7 +124,7 @@ export class Decryptor {
       this.utils.logger.log(`Status is ${this.getShareStatusString()}. Generating block share`);
       newShare = { blockHash: eBlock.hash, term: eBlock.term, nodeNumber: this.utils.nodeNumber };
       this.blockShares[this.utils.nodeNumber - 1] = newShare;
-      const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
+      const shareMsg: Message = { sender: this.utils.nodeNumber, term: eBlock.term, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
       this.netInterface.broadcast(shareMsg); // TODO fast forwarding scheme
     }
 

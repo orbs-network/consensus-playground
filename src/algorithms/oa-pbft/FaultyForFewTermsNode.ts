@@ -22,26 +22,34 @@ import TimeoutEvent from "../../simulation/events/TimeoutEvent";
 import NodeStartEvent from "../../simulation/events/NodeStartEvent";
 import bind from "bind-decorator";
 
-const SLEEP_TERM = 2;
-const AWAKE_TERM = 6;
+const MAX_CRASH_MS = 5000;
+const MAX_CRASH_DUR_MS = 3000;
 
 export default class FaultyForFewTermsNode extends HonestNode {
   protected sleeping = false;
+  protected crashed = false;
+  protected sleepTimestamp = this.scenario.randomizer.nextIntegerInRange(1, MAX_CRASH_MS);
+  protected wakeTimestamp = this.sleepTimestamp + this.scenario.randomizer.nextIntegerInRange(1, MAX_CRASH_DUR_MS);
   //
   @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
-    if (msg.term == SLEEP_TERM && !this.sleeping) {
+    if (event.timestamp >= this.sleepTimestamp && !this.sleeping && !this.crashed) {
       this.sleeping = true;
+      this.crashed = true;
       this.utils.logger.debug(`Oh no, crashing!`);
     }
-    if (msg.term >= AWAKE_TERM && this.sleeping) {
+    if (event.timestamp >= this.wakeTimestamp && this.sleeping && this.crashed) {
       this.sleeping = false;
       this.utils.logger.debug(`Waking up!`);
-      this.syncer.requestSync();
+      // this.syncer.requestSync();
     }
     if (this.sleeping) {
       return;
+    }
+    if ((msg.term > this.consensusEngine.getTerm() + 1) && !this.syncer.syncing) {
+      this.utils.logger.log(`Received message from term ${msg.term}, at term ${this.consensusEngine.getTerm()}. Entering syncing mode`);
+      this.syncer.requestSync();
     }
 
     switch (this.getMessageTopType(msg.type)) {

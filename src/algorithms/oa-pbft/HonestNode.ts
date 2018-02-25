@@ -79,8 +79,9 @@ export default class HonestNode extends BaseNode {
     this.blockchain.init(this.utils.numNodes);
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
     this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
-    this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz);
     this.syncer.init();
+    this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz, this.syncer);
+
   }
 
   @bind
@@ -93,6 +94,10 @@ export default class HonestNode extends BaseNode {
   @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
+    if ((msg.term > this.consensusEngine.getTerm() + 1) && !this.syncer.syncing) {
+      this.utils.logger.log(`Received message from term ${msg.term}, at term ${this.consensusEngine.getTerm()}. Entering syncing mode`);
+      this.syncer.requestSync();
+    }
     switch (this.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         this.consensusHandler.handleMessage(msg);

@@ -6,7 +6,7 @@ import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAn
 import bind from "bind-decorator";
 
 const NUM_NODES = 10;
-const COMMITTEE_SIZE = 5;
+const COMMITTEE_SIZE = 4;
 const NUM_BYZ = 1;
 const SHARING_THRESHOLD = 3;
 const NETWORK_MIN_DELAY_MS = 5;
@@ -27,10 +27,12 @@ export default class Scenario extends OrbsScenario {
   @bind
   createNodes(): BaseNode[] {
     const nodes = [];
-    for (let i = 0; i < NUM_NODES - 1; i++) {
+    for (let i = 0; i < NUM_NODES - NUM_BYZ; i++) {
       nodes.push(new HonestNode(this));
     }
-    nodes.push( new FaultyForFewTermsNode(this));
+    for (let i = 0; i < NUM_BYZ; i++) {
+      nodes.push(new FaultyForFewTermsNode(this));
+    }
     return nodes;
   }
 

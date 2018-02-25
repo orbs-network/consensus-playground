@@ -15,7 +15,7 @@ export class Syncer {
   protected consensusHandler: ConsensusHandler;
   protected cryptoHandler: CryptoHandler;
   protected peers: number[];
-  protected syncing: boolean;
+  public syncing: boolean;
   public netInterface: NetworkInterface;
 
   protected utils: Utils;
@@ -93,6 +93,7 @@ export class Syncer {
   @bind
   handleSyncPeerMsg(msg: Message): void {
     this.utils.logger.debug(`Received syncing message ${JSON.stringify(msg)}`);
+    // TODO sort blocks
     for (const block of msg.blocks) {
       if (!this.isValidBlock(block)) {
         continue;
@@ -100,17 +101,23 @@ export class Syncer {
       if (block.term <= this.blockchainHandler.blockchain.getLastBlock().term) {
         continue;
       }
+      this.consensusHandler.consensusEngine.handleNewBlock(block, true);
+      this.cryptoHandler.decryptor.reset();
 
     }
+    this.syncing = false;
+    this.utils.logger.log(`Finished syncing.`);
   }
 
   @bind
   sendBlocks(blockIDs: number[], toNode: number): void {
-    const blockIDsToSend = blockIDs.sort();
-    this.utils.logger.debug(`Sending blocks ${blockIDsToSend} to peer ${toNode}`);
+    // TODO for more accurate results you could just send EB,BP and SBs and save on sending DB
+    const blockIDsToSend = blockIDs.sort((a, b) => a - b);
 
-    const syncPeerMsg: Message = { type: "SyncMessage" + "/" + SyncerMessageType.SyncPeer, sender: this.utils.nodeNumber, syncerMsgType: SyncerMessageType.SyncPeer, blocks: this.blockchainHandler.blockchain.getBlocksRange(blockIDs[0], blockIDs[blockIDs.length - 1])  };
+
+    const syncPeerMsg: Message = { type: "SyncMessage" + "/" + SyncerMessageType.SyncPeer, sender: this.utils.nodeNumber, term: this.consensusHandler.consensusEngine.getTerm(), syncerMsgType: SyncerMessageType.SyncPeer, blocks: this.blockchainHandler.blockchain.getBlocksRange(blockIDs[0], blockIDs[blockIDs.length - 1])  };
     this.netInterface.unicast(toNode, syncPeerMsg);
+    this.utils.logger.debug(`Sending blocks ${blockIDsToSend} to peer ${toNode}: ${JSON.stringify(syncPeerMsg)}`);
   }
 
 

@@ -6,6 +6,7 @@ import { Blockchain } from "./Blockchain";
 import { Decryptor } from "./Decryptor";
 import { Mempool } from "./Mempool";
 import { Timer } from "./Timer";
+import { Syncer } from "./Syncer";
 import { NetworkInterface } from "./NetworkInterface";
 
 
@@ -16,7 +17,8 @@ const PROPOSAL_TIMER_MS = 2000;
 enum Phase { // not used yet
     Agreeing,
     Waiting,
-    Decrypting
+    Decrypting,
+    Syncing
 }
 
 enum State {
@@ -52,6 +54,7 @@ export class ConsensusEngine {
   protected mempool: Mempool;
   protected netInterface: NetworkInterface;
   protected timer: Timer;
+  protected syncer: Syncer;
   protected sleeping: boolean = false;
 
   protected cmap: Cmap;
@@ -67,6 +70,7 @@ export class ConsensusEngine {
     this.mempool = mempool;
     this.netInterface = netInterface;
     this.timer = timer;
+    this.syncer = undefined;
 
     this.phase = undefined;
     this.term = 0;
@@ -118,10 +122,11 @@ export class ConsensusEngine {
   * @param numByz - assumed number of Byzantine nodes (f)
   */
   @bind
-  initConsensus(numNodes: number, committeeSize: number, numByz: number): void {
+  initConsensus(numNodes: number, committeeSize: number, numByz: number, syncer: Syncer): void {
     this.utils.numNodes = numNodes;
     this.utils.committeeSize = committeeSize;
     this.utils.numByz = numByz;
+    this.syncer = syncer;
     const lastDecryptedBlock = this.blockchain.getLastBlock().decryptedBlock;
     this.enterNewTerm(lastDecryptedBlock);
   }
@@ -131,15 +136,19 @@ export class ConsensusEngine {
   * @param lastDBlock - The decrypted block of the previous round
   */
   @bind
-  enterNewTerm(lastDBlock: DecryptedBlock): void {
+  enterNewTerm(lastDBlock: DecryptedBlock, inSyncMode: boolean = false): void {
 
     this.cmap = this.sortition(lastDBlock);
     this.initPBFT_State();
     this.term += 1;
-
     this.utils.logger.log(`Entering term ${this.term}, committee is ${this.utils.getCommittee(this.cmap)}`);
+
     this.setCollectingViewChanges();
-    if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
+    if (inSyncMode) {
+      this.phase = Phase.Syncing;
+      this.timer.stopTimer();
+    }
+    else if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
       this.utils.logger.log(`Chosen as leader`);
       this.timer.setProposalTimer(PROPOSAL_TIMER_MS);
       this.phase = Phase.Agreeing; // TODO fix phases
@@ -315,7 +324,7 @@ export class ConsensusEngine {
     if (this.term != eBlock.term) {
       if (this.term < eBlock.term) {
         this.utils.logger.warn(`Received EB (${eBlock.term},${eBlock.hash}), at term ${this.term} - out of sync!`);
-        // TODO sync
+        // this.syncer. TODO sync
       }
       return false;
     }
@@ -425,7 +434,6 @@ export class ConsensusEngine {
     if (!this.isValidCommitteeMessage(msg)) return false;
     if (!this.pbftState.prepared) {
       this.utils.logger.debug(`Receieved Commit message ${JSON.stringify(msg)}, but not in Prepared state!`);
-      // this.pbftState.outOfSyncMessages.push(msg);
       return false;
     }
     if (!this.isValidEBlockHash(msg.eBlockHash)) {
@@ -622,7 +630,7 @@ export class ConsensusEngine {
    */
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
-    const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
+    const committedMsg: Message = {sender: this.nodeNumber, term: this.term, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
     this.netInterface.broadcast(committedMsg); // TODO replace with fast propagation protocol
     this.handleCommittedMessage(committedMsg);
   }
@@ -702,10 +710,10 @@ export class ConsensusEngine {
   }
 
   @bind
-  handleNewBlock(block: Block): void {
+  handleNewBlock(block: Block, inSyncMode: boolean = false): void {
     this.blockchain.addBlock(block);
     this.utils.logger.debug(`Added block ${JSON.stringify(block)} to blockchain...`);
-    this.enterNewTerm(block.decryptedBlock);
+    this.enterNewTerm(block.decryptedBlock, inSyncMode);
   }
 
   @bind
@@ -947,6 +955,8 @@ export class ConsensusEngine {
     this.utils.logger.log(`Waking up!`);
     this.sleeping = false;
   }
+
+
 
 
 

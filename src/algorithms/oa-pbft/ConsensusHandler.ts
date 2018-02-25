@@ -7,7 +7,7 @@ import bind from "bind-decorator";
 
 
 export class ConsensusHandler {
-  protected consensusEngine: ConsensusEngine;
+  public consensusEngine: ConsensusEngine;
   protected netInterface: NetworkInterface;
 
   constructor(consensusEngine: ConsensusEngine, netInterface: NetworkInterface) {

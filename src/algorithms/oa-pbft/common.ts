@@ -90,7 +90,7 @@ export interface Message {
   type: string;
   sender: number;
   receipient?: number;
-  term?: number;
+  term: number;
   view?: number;
   block?: Block;
   eBlock?: EncryptedBlock;
