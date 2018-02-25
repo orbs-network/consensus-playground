@@ -206,8 +206,8 @@ export class ConsensusEngine {
 
   @bind
   isMessageFromFuture(msg: Message): boolean {
-    if (((this.getConMsgLevel(msg.conMsgType) > (this.pbftState.progress + 1)) && (msg.term == this.term)) || (msg.term > this.term)) {
-      this.utils.logger.debug(`Message ${JSON.stringify(msg)} is from the future, at term ${this.term} and level ${this.pbftState.progress}, message at term ${msg.term} and level ${this.getConMsgLevel(msg.conMsgType)}}`);
+    if (((this.getConMsgLevel(msg.conMsgType) > (this.pbftState.progress + 1)) && (msg.term == this.term)) || (msg.term > this.term) || (msg.view > this.pbftState.view)) {
+      this.utils.logger.debug(`Message ${JSON.stringify(msg)} is from the future, at term,view ${this.term},${this.pbftState.view} and level ${this.pbftState.progress}, message at term ${msg.term},${msg.view} and level ${this.getConMsgLevel(msg.conMsgType)}}`);
       return true;
     }
     return false;
