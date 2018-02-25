@@ -12,7 +12,7 @@ const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 100;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
-const FAULTY_NODE_NAME = "FaultyNode";
+const FAULTY_NODE_NAME = "FaultyForFewTermsNode";
 
 export default class Scenario extends BaseOrbsScenarioWithNode {
 

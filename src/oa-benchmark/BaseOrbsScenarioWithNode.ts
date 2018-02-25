@@ -6,9 +6,10 @@ import bind from "bind-decorator";
 export interface OrbsExpConfig {
   name: string;
   nNodesToCreate: number;
-  commiteeSize: number;
+  committeeSize: number;
   numByz: number;
   sharingThreshold: number;
+  faultyNodeName: string;
 }
 
 export default abstract class BaseOrbsScenarioWithNode extends OrbsScenario {
@@ -21,7 +22,7 @@ export default abstract class BaseOrbsScenarioWithNode extends OrbsScenario {
     this.oaConfig = oaConfig;
     this.Node = Node;
     this.FaultyNode = FaultyNode;
-    this.committeeSize = oaConfig.commiteeSize;
+    this.committeeSize = oaConfig.committeeSize;
     this.numByz = oaConfig.numByz;
     this.sharingThreshold = oaConfig.sharingThreshold;
 

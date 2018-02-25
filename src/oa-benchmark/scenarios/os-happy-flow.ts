@@ -44,7 +44,7 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
     for (const n of NUM_NODES) {
       for (const m of COMMITTEE_SIZES) {
         for (const k of SHARING_THRESHOLDS) {
-          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, commiteeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n) };
+          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n), faultyNodeName: "HonestNode" };
           oaConfigs.push(oaConfig);
           c++;
         }

@@ -26,9 +26,22 @@ function loadHonestNode(algorithmName: string): typeof NodeModule {
   }
 }
 
-function loadFaultyNode(algorithmName: string): typeof NodeModule {
+// TODO replace this with a more elegant way to load modules
+function loadFaultyNode(algorithmName: string, faultyNodeName: string): typeof NodeModule {
   try {
-    return require(`../algorithms/${algorithmName}`).FaultyNode;
+    switch (faultyNodeName) {
+      case "FaultyNode": {
+        return require(`../algorithms/${algorithmName}`).FaultyNode;
+      }
+      case "FaultyForFewTermsNode": {
+        return require(`../algorithms/${algorithmName}`).FaultyForFewTermsNode;
+      }
+      default: {
+        return require(`../algorithms/${algorithmName}`).FaultyNode;
+      }
+
+    }
+
   } catch (e) {
     return undefined;
   }
@@ -55,10 +68,10 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
     const algorithmName = file.slice("src/algorithms/".length);
     console.log(`\n${algorithmName}\n`);
     const Node = loadHonestNode(algorithmName);
-    const FaultyNode = loadFaultyNode(algorithmName);
     const randomSeed = "benchmark4";
     const configs = Scenario.configs();
     for (const config of configs) {
+      const FaultyNode = loadFaultyNode(algorithmName, config.faultyNodeName);
       const scenario = new Scenario(randomSeed, Node, FaultyNode, config);
       const configName = algorithmName + "/" + config.name;
       scenario.start();

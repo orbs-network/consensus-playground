@@ -94,6 +94,7 @@ export default class HonestNode extends BaseNode {
   @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
+    // TODO should have some logic for recovering from crashes
     if ((msg.term > this.consensusEngine.getTerm() + 1) && !this.syncer.syncing) {
       this.utils.logger.log(`Received message from term ${msg.term}, at term ${this.consensusEngine.getTerm()}. Entering syncing mode`);
       this.syncer.requestSync();
