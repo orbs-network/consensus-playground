@@ -16,7 +16,7 @@ import bind from "bind-decorator";
 
 
 const fillRangeModulo = (start, end, cap) => {
-  return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap + 1); // second +1 -> return to nodes' ids
+  return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap);
 };
 export class NetworkInterface implements Endpoint {
 
@@ -77,19 +77,18 @@ export class NetworkInterface implements Endpoint {
   broadcast(message: any): void {
     for (const connection of this.outgoingConnections) {
       connection.send(message);
-      this.scenario.statistics.totalSentMessages++;
-      this.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
-      if (!this.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]) this.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber] = 0;
-      this.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]++;
+      this.utils.scenario.statistics.totalSentMessages++;
+      this.utils.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
+      if (!this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]) this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber] = 0;
+      this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]++;
+      this.utils.scenario.statistics.totalBroadcasts++;
     }
-    this.scenario.statistics.totalBroadcasts++;
   }
 
 
 
 /**
- * send message to multiple recipients
- * avoids duplicates
+ * send message to multiple recipients - does not send message to self + avoids duplicates
  * @param {number[]} toNodeNumber
  * @param {*} message
  */
@@ -101,13 +100,14 @@ export class NetworkInterface implements Endpoint {
     }
     for (const connection of this.outgoingConnections) {
       if (allNodesTo[connection.to.nodeNumber - 1]) {
-        connection.send(message);
-        this.utils.scenario.statistics.totalSentMessages++;
-        this.utils.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
-        if (!this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]) this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber] = 0;
-        this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]++;
-      }
-      this.utils.scenario.statistics.totalMulticasts++;
+          this.utils.logger.log("ToNode " + connection.to.nodeNumber);
+          connection.send(message);
+          this.utils.scenario.statistics.totalSentMessages++;
+          this.utils.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
+          if (!this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]) this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber] = 0;
+          this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]++;
+          this.utils.scenario.statistics.totalMulticasts++;
+        }
       }
   }
 
@@ -117,32 +117,37 @@ export class NetworkInterface implements Endpoint {
     for (const connection of this.outgoingConnections) {
       if (connection.to.nodeNumber === toNodeNumber) {
         connection.send(message);
-        this.scenario.statistics.totalSentMessages++;
-        this.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
-        if (!this.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]) this.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber] = 0;
-        this.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]++;
+        this.utils.scenario.statistics.totalSentMessages++;
+        this.utils.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
+        if (!this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]) this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber] = 0;
+        this.utils.scenario.statistics.totalReceivedMessagesPerNode[connection.to.nodeNumber]++;
+        this.utils.scenario.statistics.totalUnicasts++;
       }
     }
-    this.scenario.statistics.totalUnicasts++;
   }
 
   @bind
   fastcast(message: any, mapping?: number[]): void {
-    if (!mapping) {
-      const mapping: number[] = Array.from(new Array(this.utils.numNodes), (val, index) => index + 1);
-    }
-    const vertex =  Math.floor(mapping.indexOf(this.nodeNumber) / (this.utils.numByz + 1)); // current node index according to mapping
-    const numGroups = Math.ceil(mapping.length / (this.utils.numByz + 1));   // number of f+1 groups
-    const leftStart = ((vertex << 1) + 1) % numGroups;  // send to groups with indices leftStart and rightStart
-    const rightStart = (leftStart + 1) % numGroups;
-    let toNodeNumber = fillRangeModulo(leftStart * (this.utils.numByz + 1), (leftStart + 1) * (this.utils.numByz + 1) , mapping.length);  // generate array of nodes ids accordingly
-    toNodeNumber = toNodeNumber.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), (rightStart + 1) * (this.utils.numByz + 1) , mapping.length));
-    // do not send to 'this' node
-    const index = toNodeNumber.indexOf(this.nodeNumber, 0);
-    if (index > -1) {
-       toNodeNumber.splice(index, 1);
-    }
-    this.multicast(toNodeNumber, message);
+    this.broadcast(message);
+    // if (!mapping) {
+    //   mapping = Array.from(new Array(this.utils.numNodes), (val, index) => index + 1);
+    // }
+    // const vertex =  Math.floor(mapping.indexOf(this.nodeNumber) / (this.utils.numByz + 1)); // current node index according to mapping
+    // const numGroups = Math.ceil(mapping.length / (this.utils.numByz + 1));   // number of f+1 groups
+    // const leftStart = ((vertex << 1) + 1) % numGroups;  // send to groups with indices leftStart and rightStart
+    // const rightStart = (leftStart + 1) % numGroups;
+    // // const leftStart = (vertex << 1) % numGroups;  // send to groups with indices leftStart and rightStart
+    // // const rightStart = (leftStart + 1) % numGroups;
+    // let indices = fillRangeModulo(leftStart * (this.utils.numByz + 1), ((leftStart + 1) * (this.utils.numByz + 1) - 1) , mapping.length);  // generate array of nodes ids accordingly
+    // indices = indices.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), ((rightStart + 1) * (this.utils.numByz + 1) - 1), mapping.length));
+    // const sendTo = mapping.filter(nodeNumber => indices.indexOf(mapping.indexOf(nodeNumber)) > -1); // filter out nodes ids whose indices are not in indices
+    // this.multicast(sendTo, message);
+    // let str = "$$$$$$$ FastCast  $$$$$$$$$$$ msg:" + JSON.stringify(message) + " from-id: " + this.nodeNumber + ", vertex: " + vertex + " left: " + leftStart + " right: " + rightStart + " toIds: ";
+    // for (const to of sendTo) {
+    //   str += to + ",  ";
+    // }
+    // this.utils.logger.log(str.slice(0, str.length - 3));
+
   }
 
 }

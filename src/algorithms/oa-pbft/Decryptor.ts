@@ -12,16 +12,33 @@ enum ShareStatus {
   Invalid
 }
 
+/**
+ * Supporting the handling of multiple blocks of different terms simultaneosly.
+ * State per block:
+ *  - encryptedBlock - the block of txs; includes -> term ~ Id
+ *  - blockShares - threshold to decrypt
+ * @export
+ * @interface DecryptorBlockState
+ */
+export interface DecryptorBlockState {
+  encryptedBlock: EncryptedBlock;
+  blockShares: BlockShare[];
+  decrypted: boolean;
+}
+
+interface Map<T> {
+  [K: number]: T;
+}
+
 export class Decryptor {
   protected blockchain: Blockchain;
   protected consensusEngine: ConsensusEngine;
   protected netInterface: NetworkInterface;
   protected utils: Utils;
+  protected committedEBtoDecrypt: Map<DecryptorBlockState>;
 
-  protected committedEBtoDecrypt: EncryptedBlock;
-  protected blockShares: BlockShare[];
-
-
+  // protected committedEBtoDecrypt: EncryptedBlock;
+  // protected blockShares: BlockShare[];
 
 
   constructor() {
@@ -29,13 +46,6 @@ export class Decryptor {
 
   }
 
-  @bind
-  reset(): void {
-    this.utils.logger.debug(`Resetting Decryptor state...`);
-    this.committedEBtoDecrypt = undefined;
-    this.blockShares = new Array(this.utils.numNodes).fill(undefined);
-
-  }
 
   @bind
   init(consensusEngine: ConsensusEngine, netInterface: NetworkInterface, blockchain: Blockchain, utils: Utils): void {
@@ -43,137 +53,161 @@ export class Decryptor {
     this.netInterface = netInterface;
     this.blockchain = blockchain;
     this.utils = utils;
-    this.reset();
-
+    this.committedEBtoDecrypt = {};
   }
 
+
   @bind
-  decrypt(eBlock: EncryptedBlock, blockShares: BlockShare[]): DecryptedBlock {
-    if (this.countShares(blockShares, ShareStatus.Valid) < this.utils.sharingThreshold) {
-      this.utils.logger.error(`Don't have enough shares for decryption, need ${this.utils.sharingThreshold}, have ${this.countShares(blockShares, ShareStatus.Valid)} valid shares`);
-      return undefined;
+  decrypt(eBlock: EncryptedBlock): DecryptedBlock {
+    const dbs: DecryptorBlockState = this.committedEBtoDecrypt[eBlock.term];
+    if (dbs && dbs.encryptedBlock) {
+      if (this.countShares(eBlock.term, ShareStatus.Valid) < this.utils.sharingThreshold) {
+        this.utils.logger.error(`Don't have enough shares for decryption, need ${this.utils.sharingThreshold}, have ${this.countShares(eBlock.term, ShareStatus.Valid)} valid shares`);
+        return undefined;
+      }
+      const dBlock: DecryptedBlock = { term: eBlock.term, content: eBlock.content, hash: Utils.hashContent(eBlock.content), lastEBlockHash: eBlock.lastEBlockHash, cmap: eBlock.cmap };
+      return dBlock;
     }
-    const dBlock: DecryptedBlock = { term: eBlock.term, content: eBlock.content, hash: Utils.hashContent(eBlock.content), lastEBlockHash: eBlock.lastEBlockHash, cmap: eBlock.cmap };
-    return dBlock;
+    return undefined;
   }
 
-  @bind
-  inDecryptingPhase(): boolean {
-    return this.committedEBtoDecrypt ? true : false;
+/**
+ * Check if encryptedBlock in Dycrptor's state or not.
+ * @param {EncryptedBlock} eBlock
+ * @returns {boolean}
+ */
+@bind
+  inDecryptingPhase(term: number): boolean {
+    const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
+    if (dbs && dbs.encryptedBlock && !dbs.decrypted) return true;
+    return false;
   }
+
 
   @bind
   enterDecryptStage(eBlock: EncryptedBlock): void {
-    if (this.inDecryptingPhase()) return;
+    if (this.inDecryptingPhase(eBlock.term)) return;
     this.utils.logger.log(`Entering Decryption stage for block (${eBlock.term},${eBlock.hash})`);
-    this.committedEBtoDecrypt = eBlock;
-    // try to generate own block share if needed
-    const newShare: BlockShare = this.generateShareBlock(this.committedEBtoDecrypt);
-    if (newShare) {
-      this.handleBlockShare(newShare);
+    if (!this.committedEBtoDecrypt[eBlock.term]) {
+      const dbs: DecryptorBlockState = {encryptedBlock: eBlock, blockShares: new Array(this.utils.numNodes).fill(undefined), decrypted: false};
+      this.committedEBtoDecrypt[eBlock.term] = dbs;
     }
-    else {
-      if (this.countShares(this.blockShares, ShareStatus.Valid) >= this.utils.sharingThreshold) {
-        this.finishDecryptionPhase();
+    else { // already received shares, without EB for this term
+      this.committedEBtoDecrypt[eBlock.term].encryptedBlock = eBlock;
+    }
+    // try to generate own block share if needed
+    this.generateShareBlock(eBlock.term);
+  }
+
+
+  @bind
+  generateShareBlock(term: number): void {
+    let shareMsg: Message = undefined;
+    const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
+    if (dbs && dbs.encryptedBlock) {
+      const blockShares: BlockShare[] = dbs.blockShares;
+      if (!blockShares[this.utils.nodeNumber - 1] && this.countPotentialShares(term) < this.utils.sharingThreshold ) {
+        this.utils.logger.log(`Status is ${this.getShareStatusString(term)}. Generating block share for term ${term}`);
+        const newShare = { blockHash: dbs.encryptedBlock.hash, term: term, nodeNumber: this.utils.nodeNumber };
+        shareMsg = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
       }
     }
-
-  }
-
-  @bind
-  finishDecryptionPhase(): void {
-    if (this.committedEBtoDecrypt) {
-      this.utils.logger.log(`Status is ${this.getShareStatusString()}, decrypting block!`);
-      this.consensusEngine.handleBlockDecrypted(this.decrypt(this.committedEBtoDecrypt, this.blockShares), this.committedEBtoDecrypt, this.blockShares);
-      this.reset(); // finished work on this EB
-    }
-    else {
-      this.utils.logger.log(`Status is ${this.getShareStatusString()}, missing EB- trying to obtain it.`);
-      // TODO shouldn't happen, but in this case we need to sync to obtain EB
-    }
+    this.handleBlockShare(shareMsg);
   }
 
 
   @bind
-  handleBlockShare(blockShare: BlockShare): void {
+  handleBlockShare(msg: Message): void {
+    if (!msg) return;
+    const blockShare: BlockShare = msg.blockShare;
     if (this.checkShareStatus(blockShare) == ShareStatus.Invalid) {
       return;
     }
-
-    const numPotentialSharesPrior = this.countPotentialShares(this.blockShares);
-    this.blockShares[blockShare.nodeNumber - 1] = blockShare;
-    const numPotentialSharesPost = this.countPotentialShares(this.blockShares);
-    this.utils.logger.log(`Received share from ${blockShare.nodeNumber} for block (${blockShare.term},${blockShare.blockHash}, status is ${this.getShareStatusString()})`);
+    const term: number = blockShare.term;
+    // if (!this.committedEBtoDecrypt[term]) return;
+    if (!this.committedEBtoDecrypt[term]) {
+      const dbs: DecryptorBlockState = {encryptedBlock: undefined, blockShares: new Array(this.utils.numNodes).fill(undefined), decrypted: false};
+      this.committedEBtoDecrypt[term] = dbs;
+      // this.utils.logger.log("######Received BlockShare: " + blockShare.nodeNumber + " For term: " + term);
+    }
+    const numPotentialSharesPrior = this.countPotentialShares(term);
+    this.committedEBtoDecrypt[term].blockShares[blockShare.nodeNumber - 1] = blockShare;
+    const numPotentialSharesPost = this.countPotentialShares(term);
+    this.utils.logger.log(`Received share from ${blockShare.nodeNumber} for block (${term},${blockShare.blockHash}, status is ${this.getShareStatusString(term)})`);
 
     if ((numPotentialSharesPost <= this.utils.sharingThreshold) && (numPotentialSharesPrior < numPotentialSharesPost)) { // forward only unseen shares - even unverified up until threshold, including
-      this.netInterface.fastcast(blockShare);
+      this.netInterface.fastcast(msg); // TODO fastcast
     }
 
-    if (numPotentialSharesPost < this.utils.sharingThreshold) { //  try to generate blockshare
-      this.generateShareBlock(this.committedEBtoDecrypt);
+    if (!this.committedEBtoDecrypt[term].blockShares[this.utils.nodeNumber - 1] && numPotentialSharesPost < this.utils.sharingThreshold) { //  try to generate blockshare
+      this.generateShareBlock(term);
     }
 
-    if ( (this.countShares(this.blockShares, ShareStatus.Valid) >= this.utils.sharingThreshold)) { // not else since generateShareBlock may have added to number of shares available
-      this.finishDecryptionPhase();
+    if ((this.countShares(term, ShareStatus.Valid) >= this.utils.sharingThreshold)) { // not else since generateShareBlock may have added to number of shares available
+      this.finishDecryptionPhase(term);
     }
 
   }
+
 
   @bind
-  generateShareBlock(eBlock: EncryptedBlock): BlockShare {
-    let newShare: BlockShare = undefined;
-    if (eBlock && !this.blockShares[this.utils.nodeNumber - 1] && this.countPotentialShares(this.blockShares) < this.utils.sharingThreshold ) {
-      this.utils.logger.log(`Status is ${this.getShareStatusString()}. Generating block share`);
-      newShare = { blockHash: eBlock.hash, term: this.consensusEngine.getTerm(), nodeNumber: this.utils.nodeNumber };
-      this.blockShares[this.utils.nodeNumber - 1] = newShare;
-      const shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
-      this.netInterface.fastcast(shareMsg); // TODO fast forwarding scheme
+  finishDecryptionPhase(term: number): void {
+    if (this.inDecryptingPhase(term)) {
+      const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
+      const decryptedBlock: DecryptedBlock = this.decrypt(dbs.encryptedBlock);
+      this.committedEBtoDecrypt[term].decrypted = true;
+      this.utils.logger.log(`Status is ${this.getShareStatusString(term)}, decrypting block!`);
+      this.consensusEngine.handleBlockDecrypted(decryptedBlock, dbs.encryptedBlock, dbs.blockShares);
     }
-
-    return newShare;
+    // else {
+    //   this.utils.logger.log(`Status is ${this.getShareStatusString(term)}, missing EB- trying to obtain it.`);
+    //   // TODO shouldn't happen, but in this case we need to sync to obtain EB
+    // }
   }
+
+
+
+
+
 
   @bind
   checkShareStatus(shareBlock: BlockShare): ShareStatus {
     if (!shareBlock) return ShareStatus.Invalid;
-    if (this.consensusEngine.getTerm() != shareBlock.term) {
-      this.utils.logger.debug(`Received block share for term ${shareBlock.term}, at term ${this.consensusEngine.getTerm()}`);
-      return ShareStatus.Invalid;
+    const dbs: DecryptorBlockState = this.committedEBtoDecrypt[shareBlock.term];
+    if (dbs && dbs.encryptedBlock) {
+        if (dbs.encryptedBlock.hash != shareBlock.blockHash) {
+          this.utils.logger.debug(`Received invalid block share for block ${shareBlock.blockHash}, my EB is ${dbs.encryptedBlock.hash }`);
+          return ShareStatus.Invalid;
+        }
+        else {
+          return ShareStatus.Valid;
+        }
     }
-    if (this.committedEBtoDecrypt ) {
-      if (this.committedEBtoDecrypt.hash != shareBlock.blockHash) {
-        this.utils.logger.debug(`Received invalid block share for block ${shareBlock.blockHash}, my EB is ${this.committedEBtoDecrypt.hash }`);
-        return ShareStatus.Invalid;
-      }
-      else {
-        return ShareStatus.Valid;
-      }
-
-    }
-    else {
-      this.utils.logger.debug(`Received block share for block ${shareBlock.blockHash}, don't have EB. Storing it for now... `);
-      return ShareStatus.UnVerified;
-    }
-
+    this.utils.logger.debug(`Received block share for block ${shareBlock.blockHash}, don't have EB. Storing it for now... `);
+    return ShareStatus.UnVerified;
   }
 
   @bind
-  countShares(shareBlocks: BlockShare[], shareStatus: ShareStatus): number {
+  countShares(term: number, shareStatus: ShareStatus): number {
     let count = 0;
-    shareBlocks.forEach(item => count += (this.checkShareStatus(item) == shareStatus) ? 1 : 0);
+    const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
+    if (dbs) {
+      const blockShares: BlockShare[] = dbs.blockShares;
+      blockShares.forEach(item => count += (this.checkShareStatus(item) == shareStatus) ? 1 : 0);
+    }
     return count;
   }
 
   @bind
-  countPotentialShares(shareBlocks: BlockShare[]): number {
-    return (this.countShares(shareBlocks, ShareStatus.UnVerified) + this.countShares(shareBlocks, ShareStatus.Valid));
+  countPotentialShares(term: number): number {
+    return (this.countShares(term, ShareStatus.UnVerified) + this.countShares(term, ShareStatus.Valid));
   }
+
 
   @bind
-  getShareStatusString(): string {
-    const status = `valid/unverified/needed ${this.countShares(this.blockShares, ShareStatus.Valid)}/${this.countShares(this.blockShares, ShareStatus.UnVerified)}/${this.utils.sharingThreshold}`;
+  getShareStatusString(term: number): string {
+    const status = `valid/unverified/needed ${this.countShares(term, ShareStatus.Valid)}/${this.countShares(term, ShareStatus.UnVerified)}/${this.utils.sharingThreshold}`;
     return status;
   }
-
 
 }

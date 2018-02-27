@@ -26,6 +26,14 @@ function loadHonestNode(algorithmName: string): typeof NodeModule {
   }
 }
 
+function loadTestNode(algorithmName: string): typeof NodeModule {
+  try {
+    return require(`../algorithms/${algorithmName}`).TestNode;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 function loadFaultyNode(algorithmName: string): typeof NodeModule {
   try {
     return require(`../algorithms/${algorithmName}`).FaultyNode;
@@ -42,6 +50,9 @@ const output = new BenchmarkOutput();
 output.start();
 for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
   const scenarioName = file.slice("src/oa-benchmark/scenarios/".length, -3);
+  // if (scenarioName != "oa-testing") {
+  //   continue;
+  // }
   const Scenario = loadScenario(scenarioName);
   output.startScenario(scenarioName);
   console.log(`\n${scenarioName}\n`);
@@ -49,11 +60,12 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
     const algorithmName = file.slice("src/algorithms/".length);
     console.log(`\n${algorithmName}\n`);
     const Node = loadHonestNode(algorithmName);
+    const TestNode = loadTestNode(algorithmName);
     const FaultyNode = loadFaultyNode(algorithmName);
     const randomSeed = "benchmark4";
     const configs = Scenario.configs();
     for (const config of configs) {
-      const scenario = new Scenario(randomSeed, Node, FaultyNode, config);
+      const scenario = new Scenario(randomSeed, Node, TestNode, FaultyNode, config);
       const configName = algorithmName + "/" + config.name;
       scenario.start();
       output.addAlgorithm(configName);
@@ -66,11 +78,12 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
       output.addAlgorithmResult(configName, "forks", Statistics.hasForks(scenario) ? "yes" : "no");
       output.addAlgorithmResult(configName, "max timestamp", scenario.statistics.maxTimestampMs.toString());
       output.addAlgorithmResult(configName, "closed blocks", Statistics.minClosedBlocks(scenario).toString() + " - " + Statistics.maxClosedBlocks(scenario).toString());
-      output.addAlgorithmResult(configName, "total messages", scenario.statistics.totalSentMessages.toString());
+      output.addAlgorithmResult(configName, "total sent messages", scenario.statistics.totalSentMessages.toString());
       output.addAlgorithmResult(configName, "total bytes", scenario.statistics.totalSentBytes.toString());
       output.addAlgorithmResult(configName, "messages/node", (_.min(scenario.statistics.totalReceivedMessagesPerNode) || 0).toString() + " - " + (_.max(scenario.statistics.totalReceivedMessagesPerNode) || 0).toString());
       output.addAlgorithmResult(configName, "broadcasts", scenario.statistics.totalBroadcasts.toString());
       output.addAlgorithmResult(configName, "unicasts", scenario.statistics.totalUnicasts.toString());
+      output.addAlgorithmResult(configName, "multicasts", scenario.statistics.totalMulticasts.toString());
     }
 
 

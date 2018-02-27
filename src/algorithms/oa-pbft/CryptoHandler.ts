@@ -18,8 +18,9 @@ export class CryptoHandler {
   handleMessage(msg: Message): void {
     switch (msg.cryptoMsgType) {
       case CryptoMessageType.BlockShare: {
-        this.decryptor.handleBlockShare(msg.blockShare);
-        // this.consensusEngine.handlePrePrepareMessage(msg);
+        this.decryptor.handleBlockShare(msg);
+        // this.decryptor.handleBlockShare(msg.blockShare);
+
         // TODO relay this to other nodes using fast forward protocol
         break;
       }

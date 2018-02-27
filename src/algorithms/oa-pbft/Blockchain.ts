@@ -5,21 +5,28 @@ import { NetworkInterface } from "./NetworkInterface";
 import bind from "bind-decorator";
 
 const GENESIS_CONTENT = 1234;
+const GENESIS_TERM = 0;
+
+interface Map<T> {
+  [K: number]: T;
+}
 
 export class Blockchain {
-  protected closedBlocks: Block[] = [];
+  // protected closedBlocks: Block[] = [];
+  protected closedBlocks: Map<Block>;
   protected mempool: Mempool;
   protected netInterface: NetworkInterface;
 
   constructor() {
-
+    this.closedBlocks = {};
 
   }
 
   @bind
   init(numNodes: number): void {
     // set default genesis block
-    this.closedBlocks.push(this.createGenesisBlock(numNodes));
+    // this.closedBlocks.push(this.createGenesisBlock(numNodes));
+    this.closedBlocks[GENESIS_TERM] = this.createGenesisBlock(numNodes);
   }
 
   @bind
@@ -33,17 +40,19 @@ export class Blockchain {
 
   @bind
   getClosedBlocks(): Block[] {
-    return this.closedBlocks;
+    const closedBlocks = Object.keys(this.closedBlocks).map(key => this.closedBlocks[key]);
+    return closedBlocks;
   }
 
   @bind
   getLastBlock(): Block {
-    return this.closedBlocks[(this.closedBlocks.length - 1)];
+    return this.getClosedBlocks()[(this.getClosedBlocks().length - 1)];
   }
 
   @bind
   addBlock(block: Block): void {
-    this.closedBlocks.push(block);
+    // this.closedBlocks.push(block);
+    this.closedBlocks[block.term] = block;
   }
 
 

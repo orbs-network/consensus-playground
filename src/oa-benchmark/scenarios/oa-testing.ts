@@ -5,23 +5,24 @@ import StableConstantDelay from "../../simulation/connections/StableConstantDela
 import bind from "bind-decorator";
 
 const NUM_NODES = [10];
-const COMMITTEE_SIZES = [5, 7];
+const COMMITTEE_SIZES = [5]; // [5, 7];
 const NUM_BYZ = 0;
-const SHARING_THRESHOLDS = [2, 4];
+const SHARING_THRESHOLDS = [0]; // [2, 4];
 const NETWORK_DELAY_MS = 50;
-const MAX_SIMULATION_TIMESTAMP_MS = 10000;
+const MAX_SIMULATION_TIMESTAMP_MS = 10000; // 10000;
+const PHASE_TIMER_MS = 2000;
 
 export default class Scenario extends BaseOrbsScenarioWithNode {
   public oaConfig: OrbsExpConfig;
 
-  constructor(seed: string, Node: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
-    super(seed, Node, FaultyNode, oaConfig);
+  constructor(seed: string, Node: typeof NodeModule, TestNode: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
+    super(seed, Node, TestNode, FaultyNode, oaConfig);
   }
 
   @bind
   createNodes(): BaseNode[] {
     return _.times(this.oaConfig.nNodesToCreate, () => {
-      return new this.Node(this);
+      return new this.TestNode(this);
     });
   }
 
@@ -56,6 +57,11 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   @bind
   maxSimulationTimestampMs(): number {
     return MAX_SIMULATION_TIMESTAMP_MS;
+  }
+
+  @bind
+  phaseTimeoutMs(): number {
+    return PHASE_TIMER_MS;
   }
 
 }

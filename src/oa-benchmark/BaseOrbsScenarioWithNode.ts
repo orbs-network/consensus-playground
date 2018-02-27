@@ -13,13 +13,15 @@ export interface OrbsExpConfig {
 
 export default abstract class BaseOrbsScenarioWithNode extends OrbsScenario {
   protected Node: typeof NodeModule;
+  protected TestNode: typeof NodeModule;
   protected FaultyNode: typeof NodeModule;
   public oaConfig: OrbsExpConfig;
 
-  constructor(seed: string, Node: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
+  constructor(seed: string, Node: typeof NodeModule, TestNode: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
     super(seed);
     this.oaConfig = oaConfig;
     this.Node = Node;
+    this.TestNode = TestNode;
     this.FaultyNode = FaultyNode;
     this.committeeSize = oaConfig.commiteeSize;
     this.numByz = oaConfig.numByz;

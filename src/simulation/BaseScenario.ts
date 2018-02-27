@@ -43,8 +43,8 @@ export default abstract class BaseScenario {
       if (this.currentTimestamp > this.maxSimulationTimestampMs()) break;
       event.target.handleEvent(event);
       this.statistics.totalEvents++;
+      this.statistics.maxTimestampMs = this.currentTimestamp;
     }
-    this.statistics.maxTimestampMs = this.currentTimestamp;
   }
 
   @bind
