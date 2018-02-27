@@ -81,7 +81,7 @@ export class Syncer {
       this.sendBlocks([], msg.sender);
       return;
     }
-    this.sendBlocks(_.range(msg.term + 1, myLastClosedTerm + 1), msg.sender);
+    else this.sendBlocks(_.range(msg.term + 1, myLastClosedTerm + 1), msg.sender);
   }
 
   @bind
