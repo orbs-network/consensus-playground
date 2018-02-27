@@ -68,7 +68,7 @@ export class Syncer {
     this.syncing = true;
     const requestSyncMsg: Message = { sender: this.utils.nodeNumber, type: "SyncMessage" + "/" + SyncerMessageType.RequestSync, syncerMsgType: SyncerMessageType.RequestSync, term: atTerm };
     this.netInterface.unicast(this.peers[0], requestSyncMsg); // TODO replace with multicast after merge
-    this.utils.logger.debug(`Sending requestSync, ${JSON.stringify(requestSyncMsg)}...`);
+    this.utils.logger.debug(`Sending requestSync, last closed block is ${atTerm}...`);
   }
 
   @bind

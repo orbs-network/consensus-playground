@@ -122,6 +122,7 @@ export class Utils {
   public nodeNumber: number;
   public sharingThreshold: number;
   public logger: Logger;
+  public sleeping = false;
 
   // number of nodes, committee size and number of Byzantine nodes are handled by
   // the Node since the number of nodes is only determined after the scenario generates them.
@@ -129,6 +130,7 @@ export class Utils {
     this.scenario = scenario;
     this.nodeNumber = nodeNumber;
     this.logger = logger;
+    this.sleeping = false;
   }
 
   static hashContent(content: number): string {

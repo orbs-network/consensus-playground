@@ -960,16 +960,6 @@ export class ConsensusEngine {
 
   }
 
-  @bind
-  isSleeping(): boolean {
-    return this.sleeping;
-  }
-
-  @bind
-  handleSleepTimeoutExpired(): void {
-    this.utils.logger.log(`Waking up!`);
-    this.sleeping = false;
-  }
 
 
 

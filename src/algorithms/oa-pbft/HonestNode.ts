@@ -38,6 +38,7 @@ export default class HonestNode extends BaseNode {
 
   protected utils: Utils;
 
+
   constructor(scenario: BaseScenario) {
     super(scenario);
     this.utils = new Utils(this.scenario, this.nodeNumber, this.logger);
@@ -78,8 +79,8 @@ export default class HonestNode extends BaseNode {
 
     this.blockchain.init(this.utils.numNodes);
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
-    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
     this.syncer.init();
+    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.utils, this.syncer);
     this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz, this.syncer);
 
   }
