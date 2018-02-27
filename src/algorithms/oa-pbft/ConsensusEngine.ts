@@ -795,16 +795,31 @@ export class ConsensusEngine {
     // check I'm in sync i.e the following two hold:
     // 1. on same term as sender of view change msg
     // 2. on either same view or one behind.
-    if (!this.isMessageInSync(msg)) return false; // TODO syncer should handle if needed?
-    if (!this.isValidCommitteeMessage(msg)) return false;
-    if (!this.utils.isLeader(this.cmap, msg.receipient, msg.view)) return false;
+    if (!this.isMessageInSync(msg)) {
+      this.utils.logger.debug(`VC message out of sync.`);
+      return false; // TODO syncer should handle if needed?
+    }
+    if (!this.isValidCommitteeMessage(msg)) {
+      this.utils.logger.debug(`invalid committee message}`);
+      return false;
+    }
+    if (!this.utils.isLeader(this.cmap, msg.receipient, msg.view)) {
+      this.utils.logger.debug(`${msg.receipient} Not leader for new view}`);
+      return false;
+    }
 
     // validate proposal
     if (!msg.proposal) return true; // no proposal in the view change message, this is ok
     // if there is a proposal based on 2f+1 prepare messages, we need to validate it and the prepare messages
-    if ((msg.proposal.term != msg.term) || (msg.proposal.view != msg.view)) return false;
-    if (!this.isValidEncryptedBlock(msg.proposal.candidateEBlock)) return false;
-    const validPrepMessages = msg.proposal.prepMessages.filter( m => this.isValidProposalPrepareMessage(m, msg.proposal.candidateEBlock));
+    if ((msg.proposal.term != msg.term) || (msg.proposal.view != msg.proposal.candidateEBlock.view)) {
+      this.utils.logger.debug(`Invalid proposal`);
+      return false;
+    }
+    if (!this.isValidEncryptedBlock(msg.proposal.candidateEBlock)) {
+      this.utils.logger.debug(`Invalid EB`);
+      return false;
+    }
+    const validPrepMessages = msg.proposal.prepMessages.filter( m => m ? this.isValidProposalPrepareMessage(m, msg.proposal.candidateEBlock) : false);
     if (!this.utils.isByzMaj(validPrepMessages.length)) {
       this.utils.logger.debug(`Invalid prepare messages, there should be at least ${2 * this.utils.numByz + 1} - only have ${validPrepMessages.length} valid messages`);
       return false;
