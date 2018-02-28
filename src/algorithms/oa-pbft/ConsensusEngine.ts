@@ -393,7 +393,7 @@ export class ConsensusEngine {
       return false;
     }
     // if in sync, we shouldn't receive more than 1 different preprepare message for this term
-    if (this.pbftState.candidateEBlock && (this.pbftState.candidateEBlock.hash != msg.eBlock.hash)) {
+    if (this.pbftState.prepared && this.pbftState.candidateEBlock && (this.pbftState.candidateEBlock.hash != msg.eBlock.hash)) {
       this.utils.logger.warn(`Received preprepare message ${JSON.stringify(msg)}, already received one for current term ${this.term} with block (${this.pbftState.candidateEBlock.term},${this.pbftState.candidateEBlock.hash})`);
       return false;
     }
@@ -846,6 +846,9 @@ export class ConsensusEngine {
       this.utils.logger.debug(`VC msgs = ${JSON.stringify(msg.viewChangeMsgs)}`);
       return false;
     }
+    // if the view change messages are valid, make sure to update node view before validating the pre-prepare message
+    // which is set to new view. TODO assuming here all views are identical across the messages
+    this.pbftState.view = msg.viewChangeMsgs.filter(m => m ? true : false)[0].view;
     this.utils.logger.debug(`Validating pre-prepare message...`);
     if (!this.isValidPrePrepareMessage(msg.newPrePrepMsg, true)) {
       this.utils.logger.warn(`Invalid pre-prepare message ${JSON.stringify(msg.newPrePrepMsg)}`);
