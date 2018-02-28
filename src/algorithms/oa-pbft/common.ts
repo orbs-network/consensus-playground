@@ -26,6 +26,11 @@ export enum CryptoMessageType {
   BlockShare = "BlockShare"
 }
 
+export enum SyncerMessageType {
+  RequestSync = "RequestSync",
+  SyncPeer = "SyncPeer"
+}
+
 export class Cmap {
   public order: number[];
 
@@ -85,7 +90,7 @@ export interface Message {
   type: string;
   sender: number;
   receipient?: number;
-  term?: number;
+  term: number;
   view?: number;
   block?: Block;
   eBlock?: EncryptedBlock;
@@ -97,7 +102,9 @@ export interface Message {
   viewChangeMsgs?: Message[];
   newPrePrepMsg?: Message;
   cryptoMsgType?: CryptoMessageType;
+  syncerMsgType?: SyncerMessageType;
   blockShare?: BlockShare;
+  blocks?: Block[];
 
 }
 
@@ -115,6 +122,7 @@ export class Utils {
   public nodeNumber: number;
   public sharingThreshold: number;
   public logger: Logger;
+  public sleeping = false;
 
   // number of nodes, committee size and number of Byzantine nodes are handled by
   // the Node since the number of nodes is only determined after the scenario generates them.
@@ -122,6 +130,7 @@ export class Utils {
     this.scenario = scenario;
     this.nodeNumber = nodeNumber;
     this.logger = logger;
+    this.sleeping = false;
   }
 
   static hashContent(content: number): string {

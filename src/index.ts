@@ -15,7 +15,7 @@ function showUsage() {
   console.log(`Will run all algorithms in algorithms folder that begin with [a-z], use this to ignore algorithms (by appending '_' to the beginning for example).`);
   console.log();
   console.log(`Usage 3: node dist oa-benchmark`);
-  console.log(`Will run all algorithms beginning with "src/algorithms/oa-", on the scenarios in the "src/oa-benchmark" folder. Output will be to the folder "simulations/oa-benchmark-output"`);
+  console.log(`Will run all algorithms beginning with "src/algorithms/oa-", on the scenarios in the "src/oa-benchmark" folder. Output will be to the folder 'simulations/oa-benchmark-output/benchmark.html'. Use 'node dist oa-benchmark v' for output to unique file indexed by current time.`);
   console.log();
   console.log(`Usage 4: node dist visualize <interval-ms> <scenario> [random-seed]`);
   console.log();

@@ -19,6 +19,12 @@ export default class Random {
   }
 
   @bind
+  choice(array: number[], k: number): number[] {
+    const shuffledArray = this.shuffle(array);
+    return shuffledArray.slice(0, k);
+  }
+
+  @bind
   shuffle(array: number[]): number[] {
     // based on https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
     let currentIndex = array.length;

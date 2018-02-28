@@ -6,7 +6,7 @@ import bind from "bind-decorator";
 
 
 export class CryptoHandler {
-  protected decryptor: Decryptor;
+  public decryptor: Decryptor;
   protected netInterface: NetworkInterface;
 
   constructor(decryptor: Decryptor, netInterface: NetworkInterface) {

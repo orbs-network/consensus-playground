@@ -10,6 +10,7 @@ import { MempoolHandler } from "./MempoolHandler";
 import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
+import { Syncer } from "./Syncer";
 
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
@@ -38,6 +39,7 @@ export default class TestNode extends BaseNode {
   protected consensusHandler: ConsensusHandler;
   protected cryptoHandler: CryptoHandler;
   protected timer: Timer;
+  protected syncer: Syncer;
   public netInterface: NetworkInterface;
   protected committedEBtoDecrypt: Map<EncryptedBlock>;
   protected utils: Utils;
@@ -56,9 +58,11 @@ export default class TestNode extends BaseNode {
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
-    this.blockchainHandler = new BlockchainHandler();
+    this.blockchainHandler = new BlockchainHandler(this.blockchain);
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
     this.committedEBtoDecrypt = {};
+    this.syncer = new Syncer(this.mempoolHandler, this.blockchainHandler, this.consensusHandler, this.cryptoHandler, this.netInterface, this.utils);
+
 
 
   }
@@ -85,7 +89,7 @@ export default class TestNode extends BaseNode {
 
     this.blockchain.init(this.utils.numNodes);
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
-    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
+    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger, this.syncer);
     // this.committedEBtoDecrypt = {};
     // this.committedEBtoDecrypt[0] = this.blockchain.getLastBlock().encryptedBlock;
     // console.log(this.committedEBtoDecrypt);

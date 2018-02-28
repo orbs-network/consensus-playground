@@ -17,6 +17,10 @@ A playground to simulate and experiment with various flavors of consensus algori
 
 * Run `node dist benchmark`
 
+## Run Benchmark on Orbs Algorithm
+
+* Run `node dist oa-benchmark`,  use `node dist oa-benchmark v` to output a unique file for each run (to save results and not overwrite them). Results will be written to `simulations/oa-benchmark-output/benchmark.html` if `v` flag not specified, and to a unique file indexed by current time, if `v` specified. 
+
 ## Run Visualization
 
 * Run `node dist visualize <interval-ms> <scenario> [random-seed]`

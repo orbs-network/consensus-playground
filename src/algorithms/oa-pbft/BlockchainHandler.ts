@@ -6,8 +6,11 @@ import bind from "bind-decorator";
 
 
 export class BlockchainHandler {
-  protected blockchain: Blockchain;
+  public blockchain: Blockchain;
 
+  constructor(blockchain: Blockchain) {
+    this.blockchain = blockchain;
+  }
   @bind
   handleMessage(msg: Message): void {
     return;

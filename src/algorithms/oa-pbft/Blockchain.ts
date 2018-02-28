@@ -45,6 +45,20 @@ export class Blockchain {
   }
 
   @bind
+  getBlocksRange(start: number, end?: number): Block[] {
+    const blocks = [];
+    const e = end ? end : this.getLastBlock().term;
+    for (let i = start; i < e + 1; i++) {
+      if (this.closedBlocks[i]) {
+        blocks.push(this.closedBlocks[i]);
+      }
+    }
+    console.log(`getBlocksRange returned blocks ${blocks}`);
+    // TODO check that returns only the closed blocks from start to e
+    return blocks;
+  }
+
+  @bind
   getLastBlock(): Block {
     return this.getClosedBlocks()[(this.getClosedBlocks().length - 1)];
   }

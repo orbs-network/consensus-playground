@@ -1,26 +1,37 @@
 import * as _ from "lodash";
-import BaseScenario from "../../simulation/BaseScenario";
+import { OrbsScenario } from "./OrbsScenario";
 import BaseNode from "../../simulation/BaseNode";
-import { HonestNode, FaultyNode, FaultyPreparedNode } from "../../algorithms/oa-pbft";
+import { HonestNode, FaultyForFewTermsNode } from "../../algorithms/oa-pbft";
 import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAndPacketLoss";
 import bind from "bind-decorator";
 
-const NUM_GOOD_NODES = 2;
-const NUM_NODES = 5;
-const NETWORK_DELAY_MS = 50;
+const NUM_NODES = 10;
+const COMMITTEE_SIZE = 4;
+const NUM_BYZ = 1;
+const SHARING_THRESHOLD = 3;
 const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 250;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
-const MAX_SIMULATION_TIMESTAMP_MS = 30000;
+const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 
-export default class Scenario extends BaseScenario {
+export default class Scenario extends OrbsScenario {
+
+  constructor(seed: string) {
+    super(seed);
+    this.committeeSize = COMMITTEE_SIZE;
+    this.numByz = NUM_BYZ;
+    this.sharingThreshold = SHARING_THRESHOLD;
+
+  }
 
   @bind
   createNodes(): BaseNode[] {
     const nodes = [];
-    for (let i = 0; i < NUM_NODES; i++) {
-      if (i < NUM_GOOD_NODES) nodes.push(new HonestNode(this));
-      else nodes.push(new FaultyPreparedNode(this));
+    for (let i = 0; i < NUM_NODES - NUM_BYZ; i++) {
+      nodes.push(new HonestNode(this));
+    }
+    for (let i = 0; i < NUM_BYZ; i++) {
+      nodes.push(new FaultyForFewTermsNode(this));
     }
     return nodes;
   }

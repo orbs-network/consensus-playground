@@ -10,6 +10,7 @@ import { MempoolHandler } from "./MempoolHandler";
 import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
+import { Syncer } from "./Syncer";
 
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
@@ -32,6 +33,7 @@ export default abstract class OrbsBaseNode extends BaseNode {
   protected consensusHandler: ConsensusHandler;
   protected cryptoHandler: CryptoHandler;
   protected timer: Timer;
+  protected syncer: Syncer;
   public netInterface: NetworkInterface;
   protected utils: Utils;
 
@@ -47,8 +49,9 @@ export default abstract class OrbsBaseNode extends BaseNode {
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
-    this.blockchainHandler = new BlockchainHandler();
+    this.blockchainHandler = new BlockchainHandler(this.blockchain);
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
+    this.syncer = new Syncer(this.mempoolHandler, this.blockchainHandler, this.consensusHandler, this.cryptoHandler, this.netInterface, this.utils);
   }
 
 
