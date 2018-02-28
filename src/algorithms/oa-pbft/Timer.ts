@@ -109,6 +109,7 @@ export class Timer implements Endpoint {
         if (this.utils.sleeping) return; // TODO better that this would be in one central spot in the node
         this.utils.logger.log(`Going to sleep...`);
         this.utils.sleeping = true;
+        this.stopTimer();
         break;
       }
     }
