@@ -53,8 +53,6 @@ export class Blockchain {
         blocks.push(this.closedBlocks[i]);
       }
     }
-    console.log(`getBlocksRange returned blocks ${blocks}`);
-    // TODO check that returns only the closed blocks from start to e
     return blocks;
   }
 

@@ -67,8 +67,7 @@ export class Syncer {
     const atTerm = this.blockchainHandler.blockchain.getLastBlock().term;
     this.syncing = true;
     const requestSyncMsg: Message = { sender: this.utils.nodeNumber, type: "SyncMessage" + "/" + SyncerMessageType.RequestSync, syncerMsgType: SyncerMessageType.RequestSync, term: atTerm };
-    this.netInterface.unicast(this.peers[0], requestSyncMsg); // TODO replace with multicast after merge
-    this.utils.logger.debug(`Sending requestSync, last closed block is ${atTerm}...`);
+    this.netInterface.multicast(this.peers, requestSyncMsg); // TODO wasteful, unless assuming unlimited bandwidth- should use pings
   }
 
   @bind
