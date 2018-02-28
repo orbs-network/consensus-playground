@@ -9,7 +9,7 @@ import Statistics from "../simulation/Statistics";
 const fs = require("fs");
 const dir = "simulations/oa-benchmark-output";
 const now = new Date(Date.now());
-const outFile = `${dir}/benchmark_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.html`; // 2 types of ':' for some reason...
+
 function loadScenario(scenarioName: string): typeof OrbsScenarioWithNodeModule {
   try {
     return require(`./scenarios/${scenarioName}`).default;
@@ -34,13 +34,28 @@ function loadTestNode(algorithmName: string): typeof NodeModule {
   }
 }
 
-function loadFaultyNode(algorithmName: string): typeof NodeModule {
+
+// TODO replace this with a more elegant way to load modules
+function loadFaultyNode(algorithmName: string, faultyNodeName: string): typeof NodeModule {
   try {
-    return require(`../algorithms/${algorithmName}`).FaultyNode;
+    switch (faultyNodeName) {
+      case "FaultyNode": {
+        return require(`../algorithms/${algorithmName}`).FaultyNode;
+      }
+      case "FaultyForFewTermsNode": {
+        return require(`../algorithms/${algorithmName}`).FaultyForFewTermsNode;
+      }
+      default: {
+        return require(`../algorithms/${algorithmName}`).FaultyNode;
+      }
+
+    }
+
   } catch (e) {
     return undefined;
   }
 }
+
 
 // create output directory for results, if it doesn't already exist
 fs.existsSync(dir) || fs.mkdirSync(dir);
@@ -48,11 +63,14 @@ fs.existsSync(dir) || fs.mkdirSync(dir);
 
 const output = new BenchmarkOutput();
 output.start();
+let outputToFile = false;
+if (process.argv[3] == "v") {
+  console.log(`verbose`);
+  outputToFile = true;
+}
+
 for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
   const scenarioName = file.slice("src/oa-benchmark/scenarios/".length, -3);
-  // if (scenarioName != "oa-testing") {
-  //   continue;
-  // }
   const Scenario = loadScenario(scenarioName);
   output.startScenario(scenarioName);
   console.log(`\n${scenarioName}\n`);
@@ -61,10 +79,10 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
     console.log(`\n${algorithmName}\n`);
     const Node = loadHonestNode(algorithmName);
     const TestNode = loadTestNode(algorithmName);
-    const FaultyNode = loadFaultyNode(algorithmName);
     const randomSeed = "benchmark4";
     const configs = Scenario.configs();
     for (const config of configs) {
+      const FaultyNode = loadFaultyNode(algorithmName, config.faultyNodeName);
       const scenario = new Scenario(randomSeed, Node, TestNode, FaultyNode, config);
       const configName = algorithmName + "/" + config.name;
       scenario.start();
@@ -91,6 +109,6 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
   output.endScenario();
 }
 output.end();
-
+const outFile = (outputToFile) ? `${dir}/benchmark_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.html` : `${dir}/benchmark.html`; // 2 types of ':' for some reason...
 shell.echo(output.get()).to(outFile);
 shell.exec(`open ${outFile}`);

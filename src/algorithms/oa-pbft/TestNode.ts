@@ -89,7 +89,7 @@ export default class TestNode extends BaseNode {
 
     this.blockchain.init(this.utils.numNodes);
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
-    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger, this.syncer);
+    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.utils, this.syncer);
     // this.committedEBtoDecrypt = {};
     // this.committedEBtoDecrypt[0] = this.blockchain.getLastBlock().encryptedBlock;
     // console.log(this.committedEBtoDecrypt);

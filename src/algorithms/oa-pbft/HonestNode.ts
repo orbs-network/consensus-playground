@@ -11,6 +11,7 @@ import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 
+
 import OrbsBaseNode from "./OrbsBaseNode";
 // import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
@@ -24,6 +25,7 @@ import bind from "bind-decorator";
 
 
 export default class HonestNode extends OrbsBaseNode {
+
 
   constructor(scenario: BaseScenario) {
     super(scenario);
@@ -49,8 +51,10 @@ export default class HonestNode extends OrbsBaseNode {
 
     this.blockchain.init(this.utils.numNodes);
     this.decryptor.init(this.consensusEngine, this.netInterface, this.blockchain, this.utils);
-    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.logger);
-    this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz);
+    this.syncer.init();
+    this.timer.init(this.consensusEngine, this.nodeNumber, this.scenario, this.utils, this.syncer);
+    this.consensusEngine.initConsensus(this.utils.numNodes, this.utils.committeeSize, this.utils.numByz, this.syncer);
+
   }
 
   @bind
@@ -63,6 +67,11 @@ export default class HonestNode extends OrbsBaseNode {
   @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
+    // TODO should have some logic for recovering from crashes
+    if ((msg.term > this.consensusEngine.getTerm() + 1) && !this.syncer.syncing) {
+      this.utils.logger.log(`Received message from term ${msg.term}, at term ${this.consensusEngine.getTerm()}. Entering syncing mode`);
+      this.syncer.requestSync();
+    }
     switch (this.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         this.consensusHandler.handleMessage(msg);
@@ -75,6 +84,10 @@ export default class HonestNode extends OrbsBaseNode {
       }
       case "CryptoMessage": {
         this.cryptoHandler.handleMessage(msg);
+        break;
+      }
+      case "SyncMessage": {
+        this.syncer.handleMessage(msg);
         break;
       }
 

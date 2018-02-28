@@ -109,7 +109,7 @@ export class Decryptor {
       if (!blockShares[this.utils.nodeNumber - 1] && this.countPotentialShares(term) < this.utils.sharingThreshold ) {
         this.utils.logger.log(`Status is ${this.getShareStatusString(term)}. Generating block share for term ${term}`);
         const newShare = { blockHash: dbs.encryptedBlock.hash, term: term, nodeNumber: this.utils.nodeNumber };
-        shareMsg = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
+        shareMsg = { sender: this.utils.nodeNumber, term: term, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
       }
     }
     this.handleBlockShare(shareMsg);

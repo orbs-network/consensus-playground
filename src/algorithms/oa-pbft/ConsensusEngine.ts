@@ -6,6 +6,7 @@ import { Blockchain } from "./Blockchain";
 import { Decryptor } from "./Decryptor";
 import { Mempool } from "./Mempool";
 import { Timer } from "./Timer";
+import { Syncer } from "./Syncer";
 import { NetworkInterface } from "./NetworkInterface";
 
 
@@ -16,7 +17,8 @@ const PROPOSAL_TIMER_MS = 2000;
 enum Phase { // not used yet
     Agreeing,
     Waiting,
-    Decrypting
+    Decrypting,
+    Syncing
 }
 
 enum State {
@@ -52,6 +54,7 @@ export class ConsensusEngine {
   protected mempool: Mempool;
   protected netInterface: NetworkInterface;
   protected timer: Timer;
+  protected syncer: Syncer;
   protected sleeping: boolean = false;
 
   protected cmap: Cmap;
@@ -67,6 +70,7 @@ export class ConsensusEngine {
     this.mempool = mempool;
     this.netInterface = netInterface;
     this.timer = timer;
+    this.syncer = undefined;
 
     this.phase = undefined;
     this.term = 0;
@@ -121,10 +125,11 @@ export class ConsensusEngine {
   * @param numByz - assumed number of Byzantine nodes (f)
   */
   @bind
-  initConsensus(numNodes: number, committeeSize: number, numByz: number): void {
+  initConsensus(numNodes: number, committeeSize: number, numByz: number, syncer: Syncer): void {
     this.utils.numNodes = numNodes;
     this.utils.committeeSize = committeeSize;
     this.utils.numByz = numByz;
+    this.syncer = syncer;
     const lastDecryptedBlock = this.blockchain.getLastBlock().decryptedBlock;
     this.enterNewTerm(lastDecryptedBlock);
   }
@@ -134,17 +139,21 @@ export class ConsensusEngine {
   * @param lastDBlock - The decrypted block of the previous round
   */
   @bind
-  enterNewTerm(lastDBlock: DecryptedBlock): void {
+  enterNewTerm(lastDBlock: DecryptedBlock, inSyncMode: boolean = false): void {
 
     this.cmap = this.sortition(lastDBlock);
     this.initPBFT_State();
     // this.term += 1;
     // this.term = Math.max(this.term, lastDBlock.term) + 1;
     this.term = lastDBlock.term + 1;
-
     this.utils.logger.log(`Entering term ${this.term}, committee is ${this.utils.getCommittee(this.cmap)}`);
+
     this.setCollectingViewChanges();
-    if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
+    if (inSyncMode) {
+      this.phase = Phase.Syncing;
+      this.timer.stopTimer();
+    }
+    else if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
       this.utils.logger.log(`Chosen as leader`);
       this.timer.setProposalTimer(PROPOSAL_TIMER_MS);
       this.phase = Phase.Agreeing; // TODO fix phases
@@ -214,8 +223,8 @@ export class ConsensusEngine {
 
   @bind
   isMessageFromFuture(msg: Message): boolean {
-    if (((this.getConMsgLevel(msg.conMsgType) > (this.pbftState.progress + 1)) && (msg.term == this.term)) || (msg.term > this.term)) {
-      this.utils.logger.debug(`Message ${JSON.stringify(msg)} is from the future, at term ${this.term} and level ${this.pbftState.progress}, message at term ${msg.term} and level ${this.getConMsgLevel(msg.conMsgType)}}`);
+    if (((this.getConMsgLevel(msg.conMsgType) > (this.pbftState.progress + 1)) && (msg.term == this.term)) || (msg.term > this.term) || (msg.view > this.pbftState.view)) {
+      this.utils.logger.debug(`Message ${JSON.stringify(msg)} is from the future, at term,view ${this.term},${this.pbftState.view} and level ${this.pbftState.progress}, message at term ${msg.term},${msg.view} and level ${this.getConMsgLevel(msg.conMsgType)}}`);
       return true;
     }
     return false;
@@ -347,8 +356,7 @@ export class ConsensusEngine {
       this.utils.logger.warn(`Received EB with pointer ${eBlock.lastEBlockHash} to last EB and pointer ${eBlock.lastDBlockHash} to last DB, but mine are ${this.blockchain.getLastBlock().encryptedBlock.hash} and ${this.blockchain.getLastBlock().decryptedBlock.hash}`);
       return false;
     }
-    console.log(eBlock.term);
-    // const cmap = this.sortition(this.blockchain.getClosedBlocks()[eBlock.term].decryptedBlock);
+
     const closedBlocks: Block[] = this.blockchain.getClosedBlocks();
     const block = closedBlocks[eBlock.term];
     if (block) {
@@ -406,7 +414,7 @@ export class ConsensusEngine {
       return false;
     }
     // if in sync, we shouldn't receive more than 1 different preprepare message for this term
-    if (this.pbftState.candidateEBlock && (this.pbftState.candidateEBlock.hash != msg.eBlock.hash)) {
+    if (this.pbftState.prepared && this.pbftState.candidateEBlock && (this.pbftState.candidateEBlock.hash != msg.eBlock.hash)) {
       this.utils.logger.warn(`Received preprepare message ${JSON.stringify(msg)}, already received one for current term ${this.term} with block (${this.pbftState.candidateEBlock.term},${this.pbftState.candidateEBlock.hash})`);
       return false;
     }
@@ -447,7 +455,6 @@ export class ConsensusEngine {
     if (!this.isValidCommitteeMessage(msg)) return false;
     if (!this.pbftState.prepared) {
       this.utils.logger.debug(`Receieved Commit message ${JSON.stringify(msg)}, but not in Prepared state!`);
-      // this.pbftState.outOfSyncMessages.push(msg);
       return false;
     }
     if (!this.isValidEBlockHash(msg.eBlockHash)) {
@@ -644,12 +651,12 @@ export class ConsensusEngine {
    */
   @bind
   propagateBP(BP: BlockProof, EB: EncryptedBlock): void {
-    const committedMsg: Message = {sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
+    const committedMsg: Message = {sender: this.nodeNumber, term: EB.term, type: "ConsensusMessage" + "/" + ConsensusMessageType.Committed, conMsgType: ConsensusMessageType.Committed, blockProof: BP, eBlock: EB };
     this.handleCommittedMessage(committedMsg);
   }
 
   @bind
-  isValidCommittedMessage(msg: Message): boolean {
+  isValidCommittedMessage(msg: Message, fastSyncing: boolean = false): boolean {
     if (msg.eBlock.hash != msg.blockProof.hash) {
       this.utils.logger.warn(`Block hash ${msg.eBlock.hash} doesn't match block proof hash ${msg.blockProof.hash}`);
       return false;
@@ -663,6 +670,7 @@ export class ConsensusEngine {
         this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
         // TODO handle node out of sync - we can use fast sync to validate message even if we aren't in sync
         // TODO if we are in sync is there reason to do full validation?
+        if (!fastSyncing) return false;
       }
       else return false; // old message, ignore it
     }
@@ -713,6 +721,12 @@ export class ConsensusEngine {
   }
 
 
+  @bind
+  handleNewBlock(block: Block, inSyncMode: boolean = false): void {
+    this.blockchain.addBlock(block);
+    this.utils.logger.debug(`Added block ${JSON.stringify(block)} to blockchain...`);
+    this.enterNewTerm(block.decryptedBlock, inSyncMode);
+  }
 
   @bind
   handleProposalExpiredTimeout(): void {
@@ -793,16 +807,31 @@ export class ConsensusEngine {
     // check I'm in sync i.e the following two hold:
     // 1. on same term as sender of view change msg
     // 2. on either same view or one behind.
-    if (!this.isMessageInSync(msg)) return false; // TODO syncer should handle if needed?
-    if (!this.isValidCommitteeMessage(msg)) return false;
-    if (!this.utils.isLeader(this.cmap, msg.receipient, msg.view)) return false;
+    if (!this.isMessageInSync(msg)) {
+      this.utils.logger.debug(`VC message out of sync.`);
+      return false; // TODO syncer should handle if needed?
+    }
+    if (!this.isValidCommitteeMessage(msg)) {
+      this.utils.logger.debug(`invalid committee message}`);
+      return false;
+    }
+    if (!this.utils.isLeader(this.cmap, msg.receipient, msg.view)) {
+      this.utils.logger.debug(`${msg.receipient} Not leader for new view}`);
+      return false;
+    }
 
     // validate proposal
     if (!msg.proposal) return true; // no proposal in the view change message, this is ok
     // if there is a proposal based on 2f+1 prepare messages, we need to validate it and the prepare messages
-    if ((msg.proposal.term != msg.term) || (msg.proposal.view != msg.view)) return false;
-    if (!this.isValidEncryptedBlock(msg.proposal.candidateEBlock)) return false;
-    const validPrepMessages = msg.proposal.prepMessages.filter( m => this.isValidProposalPrepareMessage(m, msg.proposal.candidateEBlock));
+    if ((msg.proposal.term != msg.term) || (msg.proposal.view != msg.proposal.candidateEBlock.view)) {
+      this.utils.logger.debug(`Invalid proposal`);
+      return false;
+    }
+    if (!this.isValidEncryptedBlock(msg.proposal.candidateEBlock)) {
+      this.utils.logger.debug(`Invalid EB`);
+      return false;
+    }
+    const validPrepMessages = msg.proposal.prepMessages.filter( m => m ? this.isValidProposalPrepareMessage(m, msg.proposal.candidateEBlock) : false);
     if (!this.utils.isByzMaj(validPrepMessages.length)) {
       this.utils.logger.debug(`Invalid prepare messages, there should be at least ${2 * this.utils.numByz + 1} - only have ${validPrepMessages.length} valid messages`);
       return false;
@@ -829,6 +858,9 @@ export class ConsensusEngine {
       this.utils.logger.debug(`VC msgs = ${JSON.stringify(msg.viewChangeMsgs)}`);
       return false;
     }
+    // if the view change messages are valid, make sure to update node view before validating the pre-prepare message
+    // which is set to new view. TODO assuming here all views are identical across the messages
+    this.pbftState.view = msg.viewChangeMsgs.filter(m => m ? true : false)[0].view;
     this.utils.logger.debug(`Validating pre-prepare message...`);
     if (!this.isValidPrePrepareMessage(msg.newPrePrepMsg, true)) {
       this.utils.logger.warn(`Invalid pre-prepare message ${JSON.stringify(msg.newPrePrepMsg)}`);
@@ -943,16 +975,8 @@ export class ConsensusEngine {
 
   }
 
-  @bind
-  isSleeping(): boolean {
-    return this.sleeping;
-  }
 
-  @bind
-  handleSleepTimeoutExpired(): void {
-    this.utils.logger.log(`Waking up!`);
-    this.sleeping = false;
-  }
+
 
 
 

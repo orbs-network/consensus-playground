@@ -11,6 +11,7 @@ const SHARING_THRESHOLDS = [0]; // [2, 4];
 const NETWORK_DELAY_MS = 50;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000; // 10000;
 const PHASE_TIMER_MS = 2000;
+const FAULTY_NODE_NAME = "HonestNode";
 
 export default class Scenario extends BaseOrbsScenarioWithNode {
   public oaConfig: OrbsExpConfig;
@@ -22,7 +23,7 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   @bind
   createNodes(): BaseNode[] {
     return _.times(this.oaConfig.nNodesToCreate, () => {
-      return new this.TestNode(this);
+      return new this.Node(this); // TODO change back to TestNode, but was getting errors when running oa_benchmark TypeError: this.TestNode is not a constructor
     });
   }
 
@@ -45,7 +46,7 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
     for (const n of NUM_NODES) {
       for (const m of COMMITTEE_SIZES) {
         for (const k of SHARING_THRESHOLDS) {
-          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, commiteeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n) };
+          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n), faultyNodeName: FAULTY_NODE_NAME };
           oaConfigs.push(oaConfig);
           c++;
         }

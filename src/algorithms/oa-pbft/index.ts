@@ -1,6 +1,6 @@
 import HonestNode from "./HonestNode";
 import TestNode from "./TestNode";
 import FaultyNode from "./FaultyNode";
-import FaultyPreparedNode from "./FaultyPreparedNode";
+import FaultyForFewTermsNode from "./FaultyForFewTermsNode";
 
-export { HonestNode, TestNode, FaultyNode, FaultyPreparedNode };
+export { HonestNode, FaultyNode, FaultyForFewTermsNode };
