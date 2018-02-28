@@ -113,9 +113,8 @@ export class Syncer {
   sendBlocks(blockIDs: number[], toNode: number): void {
     // TODO for more accurate results you could just send EB,BP and SBs and save on sending DB
     const blockIDsToSend = blockIDs.sort((a, b) => a - b);
-
-
-    const syncPeerMsg: Message = { type: "SyncMessage" + "/" + SyncerMessageType.SyncPeer, sender: this.utils.nodeNumber, term: this.consensusHandler.consensusEngine.getTerm(), syncerMsgType: SyncerMessageType.SyncPeer, blocks: this.blockchainHandler.blockchain.getBlocksRange(blockIDs[0], blockIDs[blockIDs.length - 1])  };
+    const blocks = (blockIDsToSend.length > 0) ?  this.blockchainHandler.blockchain.getBlocksRange(blockIDsToSend[0], blockIDsToSend[blockIDsToSend.length - 1]) : [];
+    const syncPeerMsg: Message = { type: "SyncMessage" + "/" + SyncerMessageType.SyncPeer, sender: this.utils.nodeNumber, term: this.consensusHandler.consensusEngine.getTerm(), syncerMsgType: SyncerMessageType.SyncPeer, blocks: blocks };
     this.netInterface.unicast(toNode, syncPeerMsg);
     this.utils.logger.debug(`Sending blocks ${blockIDsToSend} to peer ${toNode}: ${JSON.stringify(syncPeerMsg)}`);
   }
