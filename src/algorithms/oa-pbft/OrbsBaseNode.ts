@@ -6,12 +6,13 @@ import { Timer } from "./Timer";
 import { Decryptor } from "./Decryptor";
 import { ConsensusEngine } from "./ConsensusEngine";
 import { NetworkInterface } from "./NetworkInterface";
+import { BandwidthNetworkInterface } from "./BandwidthNetworkInterface";
 import { MempoolHandler } from "./MempoolHandler";
 import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 import { Syncer } from "./Syncer";
-
+import BandwidthEndpoint from "../../simulation/BandwidthEndpoint";
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
 import { OrbsScenario } from "../../scenarios/oa-pbft/OrbsScenario";
@@ -23,7 +24,7 @@ import bind from "bind-decorator";
 
 
 
-export default abstract class OrbsBaseNode extends BaseNode {
+export default abstract class OrbsBaseNode extends BaseNode implements BandwidthEndpoint {
   protected mempool: Mempool;
   protected blockchain: Blockchain;
   protected decryptor: Decryptor;
@@ -34,7 +35,7 @@ export default abstract class OrbsBaseNode extends BaseNode {
   protected cryptoHandler: CryptoHandler;
   protected timer: Timer;
   protected syncer: Syncer;
-  public netInterface: NetworkInterface;
+  public netInterface: BandwidthNetworkInterface;
   protected utils: Utils;
 
   constructor(scenario: BaseScenario) {
@@ -45,13 +46,22 @@ export default abstract class OrbsBaseNode extends BaseNode {
     this.timer = new Timer();
 
     this.decryptor = new Decryptor();
-    this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils);
+    this.netInterface = new BandwidthNetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils);
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
     this.blockchainHandler = new BlockchainHandler(this.blockchain);
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
     this.syncer = new Syncer(this.mempoolHandler, this.blockchainHandler, this.consensusHandler, this.cryptoHandler, this.netInterface, this.utils);
+  }
+
+  addTxEvent(msgSize: number): number {
+    return this.netInterface.addTxEvent(msgSize);
+  }
+
+  @bind
+  addRxEvent(msgSize: number, baseArriveTime: number): number {
+    return this.netInterface.addRxEvent(msgSize, baseArriveTime);
   }
 
 
