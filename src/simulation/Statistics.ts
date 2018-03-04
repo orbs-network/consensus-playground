@@ -57,20 +57,43 @@ export default class Statistics {
     return _.max(Statistics.numClosedBlocksPerNode(scenario));
   }
 
+  // static hasForks(scenario: BaseScenario): boolean {
+  //   for (const node1 of scenario.nodes) {
+  //     for (const node2 of scenario.nodes) {
+  //       if (node1 === node2) continue;
+  //       for (const index in node1.benchmarkGetClosedBlocks()) {
+  //         const blockInNode1 = node1.benchmarkGetClosedBlocks()[index];
+  //         const blockInNode2 = node2.benchmarkGetClosedBlocks()[index];
+  //         if (blockInNode2) {
+  //           if (!node1.benchmarkAreClosedBlocksIdentical(blockInNode1, blockInNode2)) {
+  //             console.log("^^^^^^^^^^^^^^^Fork: " + node1.nodeNumber + "-" + node2.nodeNumber + "-" + index);
+  //             return true;
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return false;
+  // }
+
   static hasForks(scenario: BaseScenario): boolean {
     for (const node1 of scenario.nodes) {
       for (const node2 of scenario.nodes) {
         if (node1 === node2) continue;
+        const blocksInNode2 = node2.benchmarkGetClosedBlocks();
         for (const index in node1.benchmarkGetClosedBlocks()) {
           const blockInNode1 = node1.benchmarkGetClosedBlocks()[index];
-          const blockInNode2 = node2.benchmarkGetClosedBlocks()[index];
-          if (blockInNode2) {
-            if (!node1.benchmarkAreClosedBlocksIdentical(blockInNode1, blockInNode2)) return true;
+          for (const index2 in blocksInNode2) {
+            if (blockInNode1.term == blocksInNode2[index2].term) {
+              if (!node1.benchmarkAreClosedBlocksIdentical(blockInNode1, blocksInNode2[index2])) {
+                console.log("^^^^^^^^^^^^^^^Fork: " + node1.nodeNumber + "-" + node2.nodeNumber + "-" + index);
+                return true;
+              }
+            }
           }
         }
       }
     }
     return false;
   }
-
 }

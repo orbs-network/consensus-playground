@@ -12,6 +12,9 @@ const BYZ_MAJORITY = 2.0 / 3.0;
 
 const HASH_LENGTH = 8; // pseudo hash representing block hash
 
+export interface Map<T> {
+  [K: number]: T;
+}
 
 export enum ConsensusMessageType {
   PrePrepare = "PrePrepare",

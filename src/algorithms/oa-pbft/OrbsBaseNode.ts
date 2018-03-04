@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Utils, Block, Message, F } from "./common";
+import { Map, Utils, Block, Message, F } from "./common";
 import { Blockchain } from "./Blockchain";
 import { Mempool } from "./Mempool";
 import { Timer } from "./Timer";
@@ -12,8 +12,9 @@ import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 
 import BaseNode from "../../simulation/BaseNode";
-import BaseScenario from "../../simulation/BaseScenario";
-import { OrbsScenario } from "../../scenarios/oa-pbft/OrbsScenario";
+// import BaseScenario from "../../simulation/BaseScenario";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
+// import BaseOrbsScenarioWithNode from "../../oa-benchmark/BaseOrbsScenarioWithNode";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
@@ -35,7 +36,7 @@ export default abstract class OrbsBaseNode extends BaseNode {
   public netInterface: NetworkInterface;
   protected utils: Utils;
 
-  constructor(scenario: BaseScenario) {
+  constructor(scenario: OrbsScenario) {
     super(scenario);
     this.utils = new Utils(this.scenario, this.nodeNumber, this.logger);
     this.mempool = new Mempool(this.scenario.randomizer);
@@ -43,7 +44,8 @@ export default abstract class OrbsBaseNode extends BaseNode {
     this.timer = new Timer();
 
     this.decryptor = new Decryptor();
-    this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils);
+    this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler,
+      this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils, scenario.getNetworkMode());
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();
@@ -51,5 +53,41 @@ export default abstract class OrbsBaseNode extends BaseNode {
     this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
   }
 
+
+
+  @bind
+  onTimeout(event: TimeoutEvent): void {
+    // this.time
+  }
+
+  @bind
+  setTimeout(timeoutMs: number, message: any): void {
+    this.timer.setTimeout(timeoutMs, message);
+  }
+
+  @bind
+  broadcast(message: any): void {
+    this.netInterface.broadcast(message);
+  }
+
+  @bind
+  unicast(toNodeNumber: number, message: any): void {
+    this.netInterface.unicast(toNodeNumber, message);
+  }
+
+  @bind
+  benchmarkGetClosedBlocks(): Block[] {
+    return this.blockchain.getClosedBlocks();
+  }
+
+  @bind
+  benchmarkGetClosedBlocksMap(): Map<Block> {
+    return this.blockchain.getClosedBlocksMap();
+  }
+
+  @bind
+  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
+    return block1.decryptedBlock.content == block2.decryptedBlock.content;
+  }
 
 }

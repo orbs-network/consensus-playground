@@ -1,9 +1,11 @@
 import * as _ from "lodash";
-import { OrbsScenario } from "./OrbsScenario";
+import OrbsScenario from "./OrbsScenario";
 import BaseNode from "../../simulation/BaseNode";
 import { HonestNode } from "../../algorithms/oa-pbft";
 import StableConstantDelay from "../../simulation/connections/StableConstantDelay";
 import bind from "bind-decorator";
+import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+
 
 const NUM_NODES = 10;
 const COMMITTEE_SIZE = 5;
@@ -11,6 +13,7 @@ const NUM_BYZ = 0;
 const SHARING_THRESHOLD = 4;
 const NETWORK_DELAY_MS = 50;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
+const NETWORK_MODE = NetworkMode.Broadcast;
 
 export default class Scenario extends OrbsScenario {
 
@@ -45,5 +48,11 @@ export default class Scenario extends OrbsScenario {
   maxSimulationTimestampMs(): number {
     return MAX_SIMULATION_TIMESTAMP_MS;
   }
+
+  @bind
+  getNetworkMode(): NetworkMode {
+    return NETWORK_MODE;
+  }
+
 
 }
