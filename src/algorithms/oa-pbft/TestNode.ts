@@ -12,9 +12,11 @@ import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 import { Syncer } from "./Syncer";
 
-import BaseNode from "../../simulation/BaseNode";
-import BaseScenario from "../../simulation/BaseScenario";
-import { OrbsScenario } from "../../scenarios/oa-pbft/OrbsScenario";
+// import BaseNode from "../../simulation/BaseNode";
+import OrbsBaseNode from "./OrbsBaseNode";
+// import BaseScenario from "../../simulation/BaseScenario";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
+// import BaseOrbsScenarioWithNode from "../../oa-benchmark/BaseOrbsScenarioWithNode";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
@@ -26,7 +28,7 @@ interface Map<T> {
     [K: number]: T;
 }
 
-export default class TestNode extends BaseNode {
+export default class TestNode extends OrbsBaseNode {
   protected cmap: Cmap;
   protected term: number;
   protected view: number;
@@ -44,27 +46,8 @@ export default class TestNode extends BaseNode {
   protected committedEBtoDecrypt: Map<EncryptedBlock>;
   protected utils: Utils;
 
-  constructor(scenario: BaseScenario) {
+  constructor(scenario: OrbsScenario) {
     super(scenario);
-    this.term = 0;
-    this.view = 0;
-    this.utils = new Utils(this.scenario, this.nodeNumber, this.logger);
-    this.mempool = new Mempool(this.scenario.randomizer);
-    this.blockchain = new Blockchain();
-    this.timer = new Timer();
-
-    this.decryptor = new Decryptor();
-    this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler, this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils);
-    this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
-    this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
-    this.mempoolHandler = new MempoolHandler();
-    this.blockchainHandler = new BlockchainHandler(this.blockchain);
-    this.cryptoHandler = new CryptoHandler(this.decryptor, this.netInterface);
-    this.committedEBtoDecrypt = {};
-    this.syncer = new Syncer(this.mempoolHandler, this.blockchainHandler, this.consensusHandler, this.cryptoHandler, this.netInterface, this.utils);
-
-
-
   }
 
 
@@ -191,35 +174,5 @@ export default class TestNode extends BaseNode {
   }
 
 
-  @bind
-  onTimeout(event: TimeoutEvent): void {
-    // this.time
-
-  }
-
-  @bind
-  setTimeout(timeoutMs: number, message: any): void {
-    this.timer.setTimeout(timeoutMs, message);
-  }
-
-  @bind
-  broadcast(message: any): void {
-    this.netInterface.broadcast(message);
-  }
-
-  @bind
-  unicast(toNodeNumber: number, message: any): void {
-    this.netInterface.unicast(toNodeNumber, message);
-  }
-
-  @bind
-  benchmarkGetClosedBlocks(): Block[] {
-    return this.blockchain.getClosedBlocks();
-  }
-
-  @bind
-  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
-    return block1.decryptedBlock.content == block2.decryptedBlock.content;
-  }
 
 }

@@ -1,9 +1,9 @@
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
-
+import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
 import bind from "bind-decorator";
 
-export abstract class OrbsScenario extends BaseScenario {
+export default abstract class OrbsScenario extends BaseScenario {
   public committeeSize: number;
   public numByz: number;
   public sharingThreshold: number;
@@ -22,6 +22,8 @@ export abstract class OrbsScenario extends BaseScenario {
 
   abstract maxSimulationTimestampMs(): number;
 
+  abstract getNetworkMode(): NetworkMode ;
+
 
 
 }
@@ -31,4 +33,5 @@ export class ScenarioModule extends OrbsScenario {
   createNodes(): BaseNode[] { return []; }
   connectNodes(nodes: BaseNode[]) {}
   maxSimulationTimestampMs() { return 0; }
+  getNetworkMode() { return NetworkMode.Broadcast; }
 }

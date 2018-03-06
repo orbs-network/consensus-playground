@@ -182,7 +182,7 @@ export class ConsensusEngine {
   */
   @bind
   handleBlockDecrypted(dBlock: DecryptedBlock, eBlock: EncryptedBlock, blockShares: BlockShare[]): void {
-    this.utils.logger.log(`Block ${eBlock.term} decrypted, entering new term.`);
+    this.utils.logger.log(`Block ${eBlock.term} decrypted.`);
     const block = this.createBlock(eBlock, dBlock, this.pbftState.blockProof, blockShares);
     this.blockchain.addBlock(block);
     this.utils.logger.debug(`Added block ${JSON.stringify(block)} to blockchain...`);
@@ -356,9 +356,7 @@ export class ConsensusEngine {
       this.utils.logger.warn(`Received EB with pointer ${eBlock.lastEBlockHash} to last EB and pointer ${eBlock.lastDBlockHash} to last DB, but mine are ${this.blockchain.getLastBlock().encryptedBlock.hash} and ${this.blockchain.getLastBlock().decryptedBlock.hash}`);
       return false;
     }
-
-    const closedBlocks: Block[] = this.blockchain.getClosedBlocks();
-    const block = closedBlocks[eBlock.term];
+    const block: Block = this.blockchain.getClosedBlocksMap()[eBlock.term];
     if (block) {
         const cmap = this.sortition(block.decryptedBlock);
         if (!Utils.areCmapsEqual(cmap, eBlock.cmap)) {
@@ -665,15 +663,15 @@ export class ConsensusEngine {
       this.utils.logger.warn(`Block term ${msg.eBlock.term} doesn't match block proof term ${msg.blockProof.term}`);
       return false;
     }
-    if (!(msg.eBlock.term == this.term)) {
-      if (msg.eBlock.term > this.term) {
-        this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
-        // TODO handle node out of sync - we can use fast sync to validate message even if we aren't in sync
-        // TODO if we are in sync is there reason to do full validation?
-        if (!fastSyncing) return false;
-      }
-      else return false; // old message, ignore it
-    }
+    // if (!(msg.eBlock.term == this.term)) {
+    //   if (msg.eBlock.term > this.term) {
+    //     this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
+    //     // TODO handle node out of sync - we can use fast sync to validate message even if we aren't in sync
+    //     // TODO if we are in sync is there reason to do full validation?
+    //     if (!fastSyncing) return false;
+    //   }
+    //   else return false; // old message, ignore it
+    // }
 
     // fast sync-  a correct node needs only to verify that all the signers appearing in BP are indeed committee members according to the header of corresponding EB
     const cmap = msg.eBlock.cmap;
@@ -704,13 +702,18 @@ export class ConsensusEngine {
    */
   @bind
   handleCommittedMessage(msg: Message): void { // TODO separation between modules - decryptor
+    // if (msg.eBlock.term == 4) {
+    //     this.utils.logger.log(`Received EB+BP from ${msg.sender} for block (${msg.eBlock.term})`);
+    // }
     if (!this.isValidCommittedMessage(msg)) {
         return;
     }
-    if (!this.decryptor.inDecryptingPhase(msg.eBlock.term)) { // since node only enters phase once per term -> also send once
-        this.utils.logger.log(`Received EB+BP from ${msg.sender} for block (${msg.eBlock.term})`);
-        this.netInterface.fastcast(msg); // TODO fastcast
-        this.decryptor.enterDecryptStage(msg.eBlock);
+    // if (!this.decryptor.inDecryptingPhase(msg.eBlock.term)) {
+    if (!this.decryptor.hasEBBP(msg.eBlock.term)) {
+    // since node only enters phase once per term -> also send once
+      this.utils.logger.log(`Received EB+BP from ${msg.sender} for block (${msg.eBlock.term})`);
+      this.netInterface.fastcast(msg);
+      this.decryptor.enterDecryptStage(msg.eBlock);
     }
   }
 

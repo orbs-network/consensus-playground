@@ -1,7 +1,8 @@
 import BaseScenario from "../simulation/BaseScenario";
 import BaseNode, { NodeModule } from "../simulation/BaseNode";
-import { OrbsScenario } from "../scenarios/oa-pbft/OrbsScenario";
+import OrbsScenario  from "../scenarios/oa-pbft/OrbsScenario";
 import bind from "bind-decorator";
+import { NetworkMode } from "../algorithms/oa-pbft/NetworkInterface";
 
 export interface OrbsExpConfig {
   name: string;
@@ -30,6 +31,9 @@ export default abstract class BaseOrbsScenarioWithNode extends OrbsScenario {
 
   }
 
+
+
+
   static configs(): OrbsExpConfig[] {
     return [];
   }
@@ -42,4 +46,5 @@ export class OrbsScenarioWithNodeModule extends BaseOrbsScenarioWithNode {
   connectNodes(nodes: BaseNode[]) {}
   configs() { return []; }
   maxSimulationTimestampMs() { return 0; }
+  getNetworkMode() { return NetworkMode.Broadcast; }
 }

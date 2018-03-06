@@ -13,9 +13,8 @@ import { CryptoHandler } from "./CryptoHandler";
 
 
 import OrbsBaseNode from "./OrbsBaseNode";
-// import BaseNode from "../../simulation/BaseNode";
-import BaseScenario from "../../simulation/BaseScenario";
-import { OrbsScenario } from "../../scenarios/oa-pbft/OrbsScenario";
+// import BaseScenario from "../../simulation/BaseScenario";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
@@ -26,8 +25,7 @@ import bind from "bind-decorator";
 
 export default class HonestNode extends OrbsBaseNode {
 
-
-  constructor(scenario: BaseScenario) {
+  constructor(scenario: OrbsScenario) {
     super(scenario);
   }
 
@@ -94,35 +92,6 @@ export default class HonestNode extends OrbsBaseNode {
     }
   }
 
-  @bind
-  onTimeout(event: TimeoutEvent): void {
-    // this.time
 
-  }
-
-  @bind
-  setTimeout(timeoutMs: number, message: any): void {
-    this.timer.setTimeout(timeoutMs, message);
-  }
-
-  @bind
-  broadcast(message: any): void {
-    this.netInterface.broadcast(message);
-  }
-
-  @bind
-  unicast(toNodeNumber: number, message: any): void {
-    this.netInterface.unicast(toNodeNumber, message);
-  }
-
-  @bind
-  benchmarkGetClosedBlocks(): Block[] {
-    return this.blockchain.getClosedBlocks();
-  }
-
-  @bind
-  benchmarkAreClosedBlocksIdentical(block1: Block, block2: Block): boolean {
-    return block1.decryptedBlock.content == block2.decryptedBlock.content;
-  }
 
 }

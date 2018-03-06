@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Utils, Message, Block, EncryptedBlock, DecryptedBlock, BlockShare, CryptoMessageType } from "./common";
+import { Map, Utils, Message, Block, EncryptedBlock, DecryptedBlock, BlockShare, CryptoMessageType } from "./common";
 import { NetworkInterface } from "./NetworkInterface";
 import { ConsensusEngine } from "./ConsensusEngine";
 import { Blockchain } from "./Blockchain";
@@ -26,9 +26,9 @@ export interface DecryptorBlockState {
   decrypted: boolean;
 }
 
-interface Map<T> {
-  [K: number]: T;
-}
+// interface Map<T> {
+//   [K: number]: T;
+// }
 
 export class Decryptor {
   protected blockchain: Blockchain;
@@ -71,22 +71,28 @@ export class Decryptor {
     return undefined;
   }
 
-/**
- * Check if encryptedBlock in Dycrptor's state or not.
- * @param {EncryptedBlock} eBlock
- * @returns {boolean}
- */
-@bind
+  /**
+   * Check if encryptedBlock of term is in Dycrptor's state or not.
+   * @param {term}
+   * @returns {boolean}
+   */
+  @bind
+  hasEBBP(term: number): boolean {
+    const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
+    if (dbs && dbs.encryptedBlock) return true;
+    return false;
+  }
+
+  @bind
   inDecryptingPhase(term: number): boolean {
     const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
     if (dbs && dbs.encryptedBlock && !dbs.decrypted) return true;
     return false;
   }
 
-
   @bind
   enterDecryptStage(eBlock: EncryptedBlock): void {
-    if (this.inDecryptingPhase(eBlock.term)) return;
+    if (this.hasEBBP(eBlock.term)) return;
     this.utils.logger.log(`Entering Decryption stage for block (${eBlock.term},${eBlock.hash})`);
     if (!this.committedEBtoDecrypt[eBlock.term]) {
       const dbs: DecryptorBlockState = {encryptedBlock: eBlock, blockShares: new Array(this.utils.numNodes).fill(undefined), decrypted: false};
@@ -102,14 +108,15 @@ export class Decryptor {
 
   @bind
   generateShareBlock(term: number): void {
-    let shareMsg: Message = undefined;
+    let shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, term: term };
     const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
     if (dbs && dbs.encryptedBlock) {
+      this.utils.logger.log(`Generate Share Block (${term}) Status is ${this.getShareStatusString(term)}.`);
       const blockShares: BlockShare[] = dbs.blockShares;
       if (!blockShares[this.utils.nodeNumber - 1] && this.countPotentialShares(term) < this.utils.sharingThreshold ) {
         this.utils.logger.log(`Status is ${this.getShareStatusString(term)}. Generating block share for term ${term}`);
         const newShare = { blockHash: dbs.encryptedBlock.hash, term: term, nodeNumber: this.utils.nodeNumber };
-        shareMsg = { sender: this.utils.nodeNumber, term: term, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare };
+        shareMsg = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, blockShare: newShare, term: term };
       }
     }
     this.handleBlockShare(shareMsg);
@@ -118,31 +125,32 @@ export class Decryptor {
 
   @bind
   handleBlockShare(msg: Message): void {
-    if (!msg) return;
+    // if ((this.countShares(msg.term, ShareStatus.Valid) >= this.utils.sharingThreshold)) { // not else since generateShareBlock may have added to number of shares available
+    //   this.finishDecryptionPhase(msg.term);
+    // }
+    const term: number = msg.term;
     const blockShare: BlockShare = msg.blockShare;
-    if (this.checkShareStatus(blockShare) == ShareStatus.Invalid) {
-      return;
-    }
-    const term: number = blockShare.term;
-    // if (!this.committedEBtoDecrypt[term]) return;
-    if (!this.committedEBtoDecrypt[term]) {
-      const dbs: DecryptorBlockState = {encryptedBlock: undefined, blockShares: new Array(this.utils.numNodes).fill(undefined), decrypted: false};
-      this.committedEBtoDecrypt[term] = dbs;
-      // this.utils.logger.log("######Received BlockShare: " + blockShare.nodeNumber + " For term: " + term);
-    }
-    const numPotentialSharesPrior = this.countPotentialShares(term);
-    this.committedEBtoDecrypt[term].blockShares[blockShare.nodeNumber - 1] = blockShare;
-    const numPotentialSharesPost = this.countPotentialShares(term);
-    this.utils.logger.log(`Received share from ${blockShare.nodeNumber} for block (${term},${blockShare.blockHash}, status is ${this.getShareStatusString(term)})`);
+    if (this.checkShareStatus(blockShare) != ShareStatus.Invalid) {
+      // const term: number = blockShare.term;
+      // if (!this.committedEBtoDecrypt[term]) return;
+      if (!this.committedEBtoDecrypt[term]) {
+        const dbs: DecryptorBlockState = {encryptedBlock: undefined, blockShares: new Array(this.utils.numNodes).fill(undefined), decrypted: false};
+        this.committedEBtoDecrypt[term] = dbs;
+        // this.utils.logger.log("######Received BlockShare: " + blockShare.nodeNumber + " For term: " + term);
+      }
+      const numPotentialSharesPrior = this.countPotentialShares(term);
+      this.committedEBtoDecrypt[term].blockShares[blockShare.nodeNumber - 1] = blockShare;
+      const numPotentialSharesPost = this.countPotentialShares(term);
+      this.utils.logger.log(`Received share from ${blockShare.nodeNumber} for block (${term},${blockShare.blockHash}, status is ${this.getShareStatusString(term)})`);
 
-    if ((numPotentialSharesPost <= this.utils.sharingThreshold) && (numPotentialSharesPrior < numPotentialSharesPost)) { // forward only unseen shares - even unverified up until threshold, including
-      this.netInterface.fastcast(msg); // TODO fastcast
-    }
+      if ((numPotentialSharesPost <= this.utils.sharingThreshold) && (numPotentialSharesPrior < numPotentialSharesPost)) { // forward only unseen shares - even unverified up until threshold, including
+        this.netInterface.fastcast(msg); // TODO fastcast
+      }
 
-    if (!this.committedEBtoDecrypt[term].blockShares[this.utils.nodeNumber - 1] && numPotentialSharesPost < this.utils.sharingThreshold) { //  try to generate blockshare
-      this.generateShareBlock(term);
+      if (!this.committedEBtoDecrypt[term].blockShares[this.utils.nodeNumber - 1] && numPotentialSharesPost < this.utils.sharingThreshold) { //  try to generate blockshare
+        this.generateShareBlock(term);
+      }
     }
-
     if ((this.countShares(term, ShareStatus.Valid) >= this.utils.sharingThreshold)) { // not else since generateShareBlock may have added to number of shares available
       this.finishDecryptionPhase(term);
     }

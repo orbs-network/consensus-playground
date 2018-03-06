@@ -4,16 +4,19 @@ import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
 
-import { Utils, Message } from "./common";
+import { Utils, Message, } from "./common";
 import BaseEvent from "../../simulation/BaseEvent";
 import BaseConnection from "../../simulation/BaseConnection";
-import BaseScenario from "../../simulation/BaseScenario";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import Endpoint from "../../simulation/Endpoint";
 
 import bind from "bind-decorator";
 
 
+export enum NetworkMode {
+  Broadcast = 1,
+  Fastcast = 2
+}
 
 const fillRangeModulo = (start, end, cap) => {
   return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap);
@@ -25,11 +28,12 @@ export class NetworkInterface implements Endpoint {
   protected cryptoHandler: CryptoHandler;
   protected consensusHandler: ConsensusHandler;
   public nodeNumber: number;
-  protected scenario: BaseScenario;
   public outgoingConnections: BaseConnection[] = [];
   protected utils: Utils;
+  protected networkMode: NetworkMode;
 
-  constructor(nodeNumber: number, outgoingConnections: BaseConnection[], mempoolHandler: MempoolHandler, blockchainHandler: BlockchainHandler, cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils) {
+  constructor(nodeNumber: number, outgoingConnections: BaseConnection[], mempoolHandler: MempoolHandler, blockchainHandler: BlockchainHandler,
+    cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils, networkMode: NetworkMode) {
     this.nodeNumber = nodeNumber;
     this.outgoingConnections = outgoingConnections;
     this.mempoolHandler = mempoolHandler;
@@ -37,6 +41,7 @@ export class NetworkInterface implements Endpoint {
     this.cryptoHandler = cryptoHandler;
     this.consensusHandler = consensusHandler;
     this.utils = utils;
+    this.networkMode = networkMode;
 
   }
 
@@ -128,26 +133,30 @@ export class NetworkInterface implements Endpoint {
 
   @bind
   fastcast(message: any, mapping?: number[]): void {
-    this.broadcast(message);
-    // if (!mapping) {
-    //   mapping = Array.from(new Array(this.utils.numNodes), (val, index) => index + 1);
-    // }
-    // const vertex =  Math.floor(mapping.indexOf(this.nodeNumber) / (this.utils.numByz + 1)); // current node index according to mapping
-    // const numGroups = Math.ceil(mapping.length / (this.utils.numByz + 1));   // number of f+1 groups
-    // const leftStart = ((vertex << 1) + 1) % numGroups;  // send to groups with indices leftStart and rightStart
-    // const rightStart = (leftStart + 1) % numGroups;
-    // // const leftStart = (vertex << 1) % numGroups;  // send to groups with indices leftStart and rightStart
-    // // const rightStart = (leftStart + 1) % numGroups;
-    // let indices = fillRangeModulo(leftStart * (this.utils.numByz + 1), ((leftStart + 1) * (this.utils.numByz + 1) - 1) , mapping.length);  // generate array of nodes ids accordingly
-    // indices = indices.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), ((rightStart + 1) * (this.utils.numByz + 1) - 1), mapping.length));
-    // const sendTo = mapping.filter(nodeNumber => indices.indexOf(mapping.indexOf(nodeNumber)) > -1); // filter out nodes ids whose indices are not in indices
-    // this.multicast(sendTo, message);
-    // let str = "$$$$$$$ FastCast  $$$$$$$$$$$ msg:" + JSON.stringify(message) + " from-id: " + this.nodeNumber + ", vertex: " + vertex + " left: " + leftStart + " right: " + rightStart + " toIds: ";
-    // for (const to of sendTo) {
-    //   str += to + ",  ";
-    // }
-    // this.utils.logger.log(str.slice(0, str.length - 3));
-
+    if (this.networkMode == NetworkMode.Broadcast) {
+      this.broadcast(message);
+      return;
+    }
+    else if (this.networkMode == NetworkMode.Fastcast) {
+      if (!mapping) {
+        mapping = Array.from(new Array(this.utils.numNodes), (val, index) => index + 1);
+      }
+      const vertex =  Math.floor(mapping.indexOf(this.nodeNumber) / (this.utils.numByz + 1)); // current node index according to mapping
+      const numGroups = Math.ceil(mapping.length / (this.utils.numByz + 1));   // number of f+1 groups
+      const leftStart = ((vertex << 1) + 1) % numGroups;  // send to groups with indices leftStart and rightStart
+      const rightStart = (leftStart + 1) % numGroups;
+      // const leftStart = (vertex << 1) % numGroups;  // send to groups with indices leftStart and rightStart
+      // const rightStart = (leftStart + 1) % numGroups;
+      let indices = fillRangeModulo(leftStart * (this.utils.numByz + 1), ((leftStart + 1) * (this.utils.numByz + 1) - 1) , mapping.length);  // generate array of nodes ids accordingly
+      indices = indices.concat(fillRangeModulo(rightStart * (this.utils.numByz + 1), ((rightStart + 1) * (this.utils.numByz + 1) - 1), mapping.length));
+      const sendTo = mapping.filter(nodeNumber => indices.indexOf(mapping.indexOf(nodeNumber)) > -1); // filter out nodes ids whose indices are not in indices
+      this.multicast(sendTo, message);
+      let str = "$$$$$$$ FastCast  $$$$$$$$$$$ msg:" + JSON.stringify(message) + " from-id: " + this.nodeNumber + ", vertex: " + vertex + " left: " + leftStart + " right: " + rightStart + " toIds: ";
+      for (const to of sendTo) {
+        str += to + ",  ";
+      }
+      this.utils.logger.log(str.slice(0, str.length - 3));
+    }
   }
 
 }
