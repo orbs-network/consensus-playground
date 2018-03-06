@@ -6,7 +6,7 @@ import Logger from "../../simulation/Logger";
 
 // export const N = 5; // number of nodes in the system
 // export const M = (3 * F) + 1; // committee size
-export const F = 1; // upper bound on number of Byzantine nodes TODO move to scenario
+export const F = 1; // upper bound on number of Byzantine nodes. Moved to OrbsScenario, this is just a dummy default
 
 const BYZ_MAJORITY = 2.0 / 3.0;
 
@@ -91,6 +91,7 @@ export interface Proposal {
 
 export interface Message {
   type: string;
+  size?: number; // TODO needs to be mandatory
   sender: number;
   receipient?: number;
   term: number;
