@@ -42,7 +42,7 @@ export default class TestNode extends OrbsBaseNode {
   protected cryptoHandler: CryptoHandler;
   protected timer: Timer;
   protected syncer: Syncer;
-  public netInterface: NetworkInterface;
+  // public netInterface: NetworkInterface;
   protected committedEBtoDecrypt: Map<EncryptedBlock>;
   protected utils: Utils;
 

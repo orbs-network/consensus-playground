@@ -3,7 +3,7 @@ import { MempoolHandler } from "./MempoolHandler";
 import { BlockchainHandler } from "./BlockchainHandler";
 import { ConsensusHandler } from "./ConsensusHandler";
 import { CryptoHandler } from "./CryptoHandler";
-import { NetworkInterface } from "./NetworkInterface";
+import { NetworkInterface, NetworkMode } from "./NetworkInterface";
 
 import { Utils, Message, Map } from "./common";
 import BaseEvent from "../../simulation/BaseEvent";
@@ -26,8 +26,9 @@ export class BandwidthNetworkInterface extends NetworkInterface implements Bandw
   protected rxBand: Map<number>;
   protected bandwidth: number;
 
-  constructor(nodeNumber: number, outgoingConnections: BaseConnection[], mempoolHandler: MempoolHandler, blockchainHandler: BlockchainHandler, cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils, bandwidth: number = DEFAULT_BANDWIDTH ) {
-    super(nodeNumber, outgoingConnections, mempoolHandler, blockchainHandler, cryptoHandler, consensusHandler, utils);
+  constructor(nodeNumber: number, outgoingConnections: BaseConnection[], mempoolHandler: MempoolHandler, blockchainHandler: BlockchainHandler,
+    cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils, networkMode: NetworkMode, bandwidth: number = DEFAULT_BANDWIDTH ) {
+    super(nodeNumber, outgoingConnections, mempoolHandler, blockchainHandler, cryptoHandler, consensusHandler, utils, networkMode);
     this.txBand = {};
     this.rxBand = {};
     this.bandwidth = bandwidth;

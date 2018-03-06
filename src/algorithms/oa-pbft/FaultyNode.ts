@@ -14,8 +14,9 @@ import { Syncer } from "./Syncer";
 import HonestNode from "./HonestNode";
 
 import BaseNode from "../../simulation/BaseNode";
-import BaseScenario from "../../simulation/BaseScenario";
-import { OrbsScenario } from "../../scenarios/oa-pbft/OrbsScenario";
+import OrbsBaseNode from "./OrbsBaseNode";
+// import BaseScenario from "../../simulation/BaseScenario";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
