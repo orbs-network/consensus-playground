@@ -13,8 +13,8 @@ const SHARING_THRESHOLD = 3;
 const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 55;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
-const MAX_SIMULATION_TIMESTAMP_MS = 10000;
-const NETWORK_MODE = NetworkMode.Broadcast;
+const MAX_SIMULATION_TIMESTAMP_MS = 1000;
+const NETWORK_MODE = NetworkMode.Fastcast;
 
 export default class Scenario extends OrbsScenario {
 
