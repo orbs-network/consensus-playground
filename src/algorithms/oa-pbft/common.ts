@@ -11,6 +11,7 @@ export const F = 1; // upper bound on number of Byzantine nodes. Moved to OrbsSc
 const BYZ_MAJORITY = 2.0 / 3.0;
 
 const HASH_LENGTH = 8; // pseudo hash representing block hash
+export const BASE_MSG_SIZE_BYTES = 1000;
 
 export interface Map<T> {
   [K: number]: T;
@@ -91,7 +92,7 @@ export interface Proposal {
 
 export interface Message {
   type: string;
-  size?: number; // TODO needs to be mandatory
+  size_bytes?: number;
   sender: number;
   receipient?: number;
   term: number;

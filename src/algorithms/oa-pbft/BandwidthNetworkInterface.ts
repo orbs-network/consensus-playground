@@ -14,7 +14,7 @@ import BandwidthEndpoint from "../../simulation/BandwidthEndpoint";
 
 import bind from "bind-decorator";
 
-const DEFAULT_BANDWIDTH = 10000;  // bits per second -> devide by basic time unit
+const DEFAULT_BANDWIDTH = 100000;  // bits per second -> devide by basic time unit
 
 // const fillRangeModulo = (start, end, cap) => {
 //   return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap);
@@ -49,7 +49,7 @@ export class BandwidthNetworkInterface extends NetworkInterface implements Bandw
     while (leftToTransmit > 0 && (atTimestamp <= this.utils.scenario.maxSimulationTimestampMs())) {
       bwMap[atTimestamp] = bwMap[atTimestamp] ? bwMap[atTimestamp] : 0;
       usedBandwidthAtTimestamp = Math.min(this.bandwidth - bwMap[atTimestamp], leftToTransmit);
-      leftToTransmit = Math.min(leftToTransmit - usedBandwidthAtTimestamp, 0);
+      leftToTransmit = Math.max(leftToTransmit - usedBandwidthAtTimestamp, 0);
       bwMap[atTimestamp] += usedBandwidthAtTimestamp;
       atTimestamp ++;
     }
