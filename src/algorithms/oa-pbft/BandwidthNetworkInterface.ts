@@ -42,6 +42,12 @@ export class BandwidthNetworkInterface extends NetworkInterface implements Bandw
   }
 
   @bind
+  setBandwidth(bandwidth: number): void {
+    this.utils.logger.debug(`Setting bandwidth to be ${bandwidth}`);
+    this.bandwidth = bandwidth;
+  }
+
+  @bind
   fillBandwidth(msgSize: number, baseArriveTime: number, bwMap: Map<number>): number {
     let leftToTransmit = msgSize;
     let atTimestamp = baseArriveTime;

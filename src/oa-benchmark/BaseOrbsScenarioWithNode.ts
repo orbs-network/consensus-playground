@@ -47,4 +47,5 @@ export class OrbsScenarioWithNodeModule extends BaseOrbsScenarioWithNode {
   configs() { return []; }
   maxSimulationTimestampMs() { return 0; }
   getNetworkMode() { return NetworkMode.Broadcast; }
+  getNetworkConfiguration() { return { nodeBandwidths: [], nodeRegions: [], connectivityMatrix: [] }; }
 }

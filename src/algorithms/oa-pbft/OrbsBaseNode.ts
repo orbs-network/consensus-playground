@@ -59,6 +59,7 @@ export default abstract class OrbsBaseNode extends BaseNode implements Bandwidth
     this.syncer = new Syncer(this.mempoolHandler, this.blockchainHandler, this.consensusHandler, this.cryptoHandler, this.netInterface, this.utils);
   }
 
+  @bind
   addTxEvent(msgSize: number): number {
     return this.netInterface.addTxEvent(msgSize);
   }
@@ -66,6 +67,11 @@ export default abstract class OrbsBaseNode extends BaseNode implements Bandwidth
   @bind
   addRxEvent(msgSize: number, baseArriveTime: number): number {
     return this.netInterface.addRxEvent(msgSize, baseArriveTime);
+  }
+
+  @bind
+  setBandwidth(bandwidth: number): void {
+    this.netInterface.setBandwidth(bandwidth);
   }
 
 

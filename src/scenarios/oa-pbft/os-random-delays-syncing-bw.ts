@@ -1,7 +1,8 @@
 import * as _ from "lodash";
 import OrbsScenario from "./OrbsScenario";
+import { NetworkConfiguration } from "./OrbsScenario";
 import BaseNode from "../../simulation/BaseNode";
-import { HonestNode, FaultyForFewTermsNode } from "../../algorithms/oa-pbft";
+import { HonestNode, FaultyForFewTermsNode, OrbsBaseNode } from "../../algorithms/oa-pbft";
 import BandwidthConnection from "../../simulation/connections/BandwidthConnection";
 import bind from "bind-decorator";
 import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
@@ -23,11 +24,10 @@ export default class Scenario extends OrbsScenario {
     this.committeeSize = COMMITTEE_SIZE;
     this.numByz = NUM_BYZ;
     this.sharingThreshold = SHARING_THRESHOLD;
-
   }
 
   @bind
-  createNodes(): BaseNode[] {
+  createNodes(): OrbsBaseNode[] {
     const nodes = [];
     for (let i = 0; i < NUM_NODES - NUM_BYZ; i++) {
       nodes.push(new HonestNode(this));
@@ -39,11 +39,15 @@ export default class Scenario extends OrbsScenario {
   }
 
   @bind
-  connectNodes(nodes: BaseNode[]): void {
+  connectNodes(nodes: OrbsBaseNode[]): void {
+    const networkConfiguration = this.getNetworkConfiguration();
     for (const fromNode of nodes) {
+      // set bandwidth according to network configuration
+      fromNode.setBandwidth(networkConfiguration.nodeBandwidths[fromNode.nodeNumber - 1]);
       for (const toNode of nodes) {
         if (fromNode !== toNode) {
-          const connection = new BandwidthConnection(this, fromNode, toNode, NETWORK_MIN_DELAY_MS, NETWORK_MAX_DELAY_MS);
+          const connectionParams = networkConfiguration.connectivityMatrix[networkConfiguration.nodeRegions[fromNode.nodeNumber - 1]][networkConfiguration.nodeRegions[toNode.nodeNumber - 1]];
+          const connection = new BandwidthConnection(this, fromNode, toNode, connectionParams.minDelayMs, connectionParams.maxDelayMs);
           fromNode.outgoingConnections.push(connection);
         }
       }
