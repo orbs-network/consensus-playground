@@ -365,16 +365,19 @@ export class ConsensusEngine {
         }
     }
 
-    // if eBlock view is greater than 1, check that the necessary new view messages exist proving the view indeed changed.
+    // if eBlock view is greater than 1, make sure corresponding NewView message exists
     // if we're in the midst of validating a new view message, ignore this section - the new view message validity depends on the validity of the eBlock, so we avoid a circular dependency TODO recheck this
     if (eBlock.view > 1 && !inNewViewStage) {
-      if (this.pbftState.newViewMessages.length < (eBlock.view - 1) ) { // assuming all new view messages receieved
-        this.utils.logger.error(`Didn't receive NewView message corresponding to ${JSON.stringify(eBlock)}, new view messages are ${JSON.stringify(this.pbftState.newViewMessages)}`);
+      const newViewMessages = this.pbftState.newViewMessages.filter(m => (m.view == eBlock.view));
+      if (newViewMessages.length != 1) {
+        this.utils.logger.error(`Have more than one new view message corresponding to view ${eBlock.view}, new view messages are ${JSON.stringify(this.pbftState.newViewMessages)}`);
         return false;
-      } // - 2 since (1) view is 1-indexed while array is 0-indexed, and (2) we want to check previous new view message
-      else if (this.pbftState.newViewMessages[eBlock.view - 1 - 1].newPrePrepMsg.eBlock.hash != eBlock.hash) {
-        this.utils.logger.error(`Eblock ${JSON.stringify(eBlock)} doesn't correspond to NewView message Eblock ${JSON.stringify(this.pbftState.newViewMessages[eBlock.view - 1 - 1].newPrePrepMsg.eBlock)}`);
-        return false;
+      }
+      else {
+        if (newViewMessages[0].newPrePrepMsg.eBlock.hash != eBlock.hash) {
+          this.utils.logger.error(`Eblock ${JSON.stringify(eBlock)} doesn't correspond to NewView message Eblock ${JSON.stringify(newViewMessages[0].newPrePrepMsg.eBlock)}`);
+          return false;
+        }
       }
     }
 
