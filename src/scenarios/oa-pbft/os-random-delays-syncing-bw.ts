@@ -4,7 +4,7 @@ import BaseNode from "../../simulation/BaseNode";
 import { HonestNode, FaultyForFewTermsNode } from "../../algorithms/oa-pbft";
 import BandwidthConnection from "../../simulation/connections/BandwidthConnection";
 import bind from "bind-decorator";
-import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+// import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
 
 const NUM_NODES = 10;
 const COMMITTEE_SIZE = 4;
@@ -14,7 +14,7 @@ const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 55;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
 const MAX_SIMULATION_TIMESTAMP_MS = 1000;
-const NETWORK_MODE = NetworkMode.Fastcast;
+// const NETWORK_MODE = NetworkMode.Fastcast;
 
 export default class Scenario extends OrbsScenario {
 
@@ -23,6 +23,7 @@ export default class Scenario extends OrbsScenario {
     this.committeeSize = COMMITTEE_SIZE;
     this.numByz = NUM_BYZ;
     this.sharingThreshold = SHARING_THRESHOLD;
+    this.maxSimulationTimestamp = MAX_SIMULATION_TIMESTAMP_MS;
 
   }
 
@@ -50,14 +51,14 @@ export default class Scenario extends OrbsScenario {
     }
   }
 
-  @bind
-  maxSimulationTimestampMs(): number {
-    return MAX_SIMULATION_TIMESTAMP_MS;
-  }
+  // @bind
+  // maxSimulationTimestampMs(): number {
+  //   return MAX_SIMULATION_TIMESTAMP_MS;
+  // }
 
-  @bind
-  getNetworkMode(): NetworkMode {
-    return NETWORK_MODE;
-  }
+  // @bind
+  // getNetworkMode(): NetworkMode {
+  //   return NETWORK_MODE;
+  // }
 
 }

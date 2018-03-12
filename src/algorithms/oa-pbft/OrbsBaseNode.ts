@@ -41,7 +41,7 @@ export default abstract class OrbsBaseNode extends BaseNode implements Bandwidth
 
   constructor(scenario: OrbsScenario) {
     super(scenario);
-    this.utils = new Utils(this.scenario, this.nodeNumber, this.logger);
+    this.utils = new Utils(scenario, this.nodeNumber, this.logger);
     this.mempool = new Mempool(this.scenario.randomizer);
     this.blockchain = new Blockchain();
     this.timer = new Timer();
@@ -50,7 +50,7 @@ export default abstract class OrbsBaseNode extends BaseNode implements Bandwidth
     // this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler,
     //   this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils, scenario.getNetworkMode());
     this.netInterface = new BandwidthNetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler,
-      this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils, scenario.getNetworkMode());
+      this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils, scenario.getNetworkPropagationMode());
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
     this.consensusHandler = new ConsensusHandler(this.consensusEngine, this.netInterface);
     this.mempoolHandler = new MempoolHandler();

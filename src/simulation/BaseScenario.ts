@@ -3,6 +3,7 @@ import EventQueue from "./EventQueue";
 import BaseEvent from "./BaseEvent";
 import BaseNode from "./BaseNode";
 import Statistics from "./Statistics";
+import Logger from "./Logger";
 import NodeStartEvent from "./events/NodeStartEvent";
 import bind from "bind-decorator";
 
@@ -11,6 +12,7 @@ export default abstract class BaseScenario {
   public currentTimestamp: number;
   public numNodes: number;
   public statistics: Statistics;
+  public logger: Logger;
   public nodes: BaseNode[];
   protected eventQueue: EventQueue;
 
@@ -18,6 +20,7 @@ export default abstract class BaseScenario {
     this.randomizer = new Random(seed);
     this.eventQueue = new EventQueue();
     this.statistics = new Statistics();
+    this.logger = new Logger("BaseScenario", this);
     BaseNode.resetNumNodes();
   }
 
@@ -27,24 +30,37 @@ export default abstract class BaseScenario {
 
   abstract maxSimulationTimestampMs(): number;
 
+  onScenarioEnd(): void {}
+
   @bind
   start() {
     this.currentTimestamp = 0;
     this.nodes = this.createNodes();
     this.numNodes = this.nodes.length;
     this.connectNodes(this.nodes);
+    const debugThreshold = this.logger.getDebugThreshold();
     for (const node of this.nodes) {
       const event = new NodeStartEvent(this.currentTimestamp, node);
       this.postEvent(event);
     }
     while (!this.eventQueue.empty()) {
       const event = this.eventQueue.dequeue();
+      if (event == undefined)
+          console.log(` Event UNDEFINED`);
+      if (event.timestamp < this.currentTimestamp) {
+        this.logger.error(`Event timestamp is lower than current time!   ${JSON.stringify(event)}`);
+        continue;
+      }
+      if (event.timestamp > this.currentTimestamp) {
+        this.logger.log(`Current Time: ${this.currentTimestamp}`, debugThreshold);
+      }
+      if (event.timestamp > this.maxSimulationTimestampMs()) break;
       this.currentTimestamp = event.timestamp;
-      if (this.currentTimestamp > this.maxSimulationTimestampMs()) break;
       event.target.handleEvent(event);
       this.statistics.totalEvents++;
       this.statistics.maxTimestampMs = this.currentTimestamp;
     }
+    this.onScenarioEnd();
   }
 
   @bind

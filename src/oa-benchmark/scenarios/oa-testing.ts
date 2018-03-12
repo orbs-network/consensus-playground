@@ -3,7 +3,6 @@ import BaseOrbsScenarioWithNode, { OrbsExpConfig } from "../BaseOrbsScenarioWith
 import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import StableConstantDelay from "../../simulation/connections/StableConstantDelay";
 import bind from "bind-decorator";
-import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
 
 
 const NUM_NODES = [10];
@@ -14,7 +13,6 @@ const NETWORK_DELAY_MS = 50;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000; // 10000;
 const PHASE_TIMER_MS = 2000;
 const FAULTY_NODE_NAME = "HonestNode";
-const NETWORK_MODE = NetworkMode.Fastcast;
 
 
 export default class Scenario extends BaseOrbsScenarioWithNode {
@@ -44,34 +42,9 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   }
 
 
-  static configs(): OrbsExpConfig[] {
-    const oaConfigs: OrbsExpConfig[] = [];
-    let c = 1;
-    for (const n of NUM_NODES) {
-      for (const m of COMMITTEE_SIZES) {
-        for (const k of SHARING_THRESHOLDS) {
-          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n), faultyNodeName: FAULTY_NODE_NAME };
-          oaConfigs.push(oaConfig);
-          c++;
-        }
-      }
-    }
-    return oaConfigs;
-  }
-
-  @bind
-  maxSimulationTimestampMs(): number {
-    return MAX_SIMULATION_TIMESTAMP_MS;
-  }
-
   @bind
   phaseTimeoutMs(): number {
     return PHASE_TIMER_MS;
-  }
-
-  @bind
-  getNetworkMode(): NetworkMode {
-    return NETWORK_MODE;
   }
 
 }
