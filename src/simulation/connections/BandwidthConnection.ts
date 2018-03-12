@@ -29,7 +29,7 @@ export default class BandwidthConnection extends BaseConnection {
     const messageSize = message.size ? message.size : 1; // default for messages without specified size
     const txTime = this.from.addTxEvent(messageSize); // delay due to source congestion
     const arriveTime = txTime + delayMs; // delay due to source congestion + connection
-    const rxTime = this.to.addRxEvent(message.size, arriveTime); // delay due to target congestion
+    const rxTime = this.to.addRxEvent(messageSize, arriveTime); // delay due to target congestion
     // console.log(`Sending message ${JSON.stringify(message)} of size ${messageSize} at time ${txTime}, arrival at ${rxTime};`);
     const event = new MessageEvent(rxTime, this.to, message);
     this.scenario.postEvent(event);
