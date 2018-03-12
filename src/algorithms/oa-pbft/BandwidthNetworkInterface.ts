@@ -14,7 +14,7 @@ import BandwidthEndpoint from "../../simulation/BandwidthEndpoint";
 
 import bind from "bind-decorator";
 
-const DEFAULT_BANDWIDTH = 10000;  // bits per second -> devide by basic time unit
+const DEFAULT_BANDWIDTH = 100000;  // bits per second -> devide by basic time unit
 
 // const fillRangeModulo = (start, end, cap) => {
 //   return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap);
@@ -39,6 +39,12 @@ export class BandwidthNetworkInterface extends NetworkInterface implements Bandw
     if (event instanceof MessageEvent) {
       this.onMessage(event);
     }
+  }
+
+  @bind
+  setBandwidth(bandwidth: number): void {
+    this.utils.logger.debug(`Setting bandwidth to be ${bandwidth}`);
+    this.bandwidth = bandwidth;
   }
 
   @bind

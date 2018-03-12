@@ -1,17 +1,18 @@
 import * as _ from "lodash";
 import OrbsScenario from "./OrbsScenario";
+import { NetworkConfiguration } from "./OrbsScenario";
 import BaseNode from "../../simulation/BaseNode";
-import { HonestNode, FaultyForFewTermsNode } from "../../algorithms/oa-pbft";
+import { HonestNode, FaultyForFewTermsNode, OrbsBaseNode } from "../../algorithms/oa-pbft";
 import BandwidthConnection from "../../simulation/connections/BandwidthConnection";
 import bind from "bind-decorator";
 // import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
 
 const NUM_NODES = 10;
-const COMMITTEE_SIZE = 4;
-const NUM_BYZ = 0;
+const COMMITTEE_SIZE = 7;
+const NUM_BYZ = 2;
 const SHARING_THRESHOLD = 3;
-const NETWORK_MIN_DELAY_MS = 5;
-const NETWORK_MAX_DELAY_MS = 55;
+const NETWORK_MIN_DELAY_MS = 10;
+const NETWORK_MAX_DELAY_MS = 370;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
 const MAX_SIMULATION_TIMESTAMP_MS = 1000;
 // const NETWORK_MODE = NetworkMode.Fastcast;
@@ -28,7 +29,7 @@ export default class Scenario extends OrbsScenario {
   }
 
   @bind
-  createNodes(): BaseNode[] {
+  createNodes(): OrbsBaseNode[] {
     const nodes = [];
     for (let i = 0; i < NUM_NODES - NUM_BYZ; i++) {
       nodes.push(new HonestNode(this));
@@ -40,11 +41,15 @@ export default class Scenario extends OrbsScenario {
   }
 
   @bind
-  connectNodes(nodes: BaseNode[]): void {
+  connectNodes(nodes: OrbsBaseNode[]): void {
+    const networkConfiguration = this.getNetworkConfiguration();
     for (const fromNode of nodes) {
+      // set bandwidth according to network configuration
+      fromNode.setBandwidth(networkConfiguration.nodeBandwidths[fromNode.nodeNumber - 1]);
       for (const toNode of nodes) {
         if (fromNode !== toNode) {
-          const connection = new BandwidthConnection(this, fromNode, toNode, NETWORK_MIN_DELAY_MS, NETWORK_MAX_DELAY_MS);
+          const connectionParams = networkConfiguration.connectivityMatrix[networkConfiguration.nodeRegions[fromNode.nodeNumber - 1]][networkConfiguration.nodeRegions[toNode.nodeNumber - 1]];
+          const connection = new BandwidthConnection(this, fromNode, toNode, connectionParams.minDelayMs, connectionParams.maxDelayMs);
           fromNode.outgoingConnections.push(connection);
         }
       }

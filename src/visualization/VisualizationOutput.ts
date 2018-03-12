@@ -73,6 +73,9 @@ export default class VisualizationOutput {
           <script src="https://d3js.org/d3.v4.min.js"></script>
           <script src="https://cdn.rawgit.com/nicgirault/circosJS/v2/dist/circos.js"></script>
           <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700" rel="stylesheet">
+          <link href="http://cdn.syncfusion.com/16.1.0.24/js/web/flat-azure/ej.web.all.min.css" rel="stylesheet"/>
+          <script src="http://cdn.syncfusion.com/js/assets/external/jquery-1.10.2.min.js"></script>
+          <script src="http://cdn.syncfusion.com/16.1.0.24/js/web/ej.web.all.min.js"></script>
           <style>
             body {
               font-family: 'Roboto Mono', monospace;
@@ -88,18 +91,23 @@ export default class VisualizationOutput {
               font-weight: 700;
               color: #ccc;
             }
+            .frame .e-slider-wrap {
+                display: block;
+                margin-top: 40px;
+            }
           </style>
         </head>
         <body>
           <center>
             <h2>${this.scenarioName}</h2>
             <div id="chart"></div>
-            <input type="range" name="points" min="0" max="${this.statistics.recordedMessagesByInterval.length - 1}" step="1" value="0" id="slider-time" style="width:900px">
             <div id="timestamp"></div>
+            <div id="timeSlider" style="margin: 0 auto; width: 50%;"></div>
           </center>
           <div style="position: fixed; left: 30; top: 100;">
             ${this.getRenderedLegend()}
           </div>
+
         <script>
 
       var labels = [
@@ -130,6 +138,28 @@ ${this.getRenderedDataPoints()}
         }
       }).render();
       var lastUpdate = -1;
+      var rObj = 0,target;
+              $(function() {
+                  var initValue = 0;
+                  $("#timeSlider").ejSlider({
+                      height: 16,
+                      value: initValue,
+                      minValue: 0,
+                      maxValue: ${this.statistics.recordedMessagesByInterval.length - 1},
+                      incrementStep: 1,
+                      change: "onChange",
+                      slide: "onChange"
+                  });
+
+                  rObj = $('#timeSlider').data('ejSlider');
+
+              });
+
+              function onChange(args) {
+                  this.wrapper.prev().children('span.value').html(args.value);
+                  update(args.value);
+              }
+
       function colorize(v) {
         var i = Math.abs(v.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)) % 19;
         return ["#F44336","#E91E63","#9C27B0","#673AB7","#3F51B5","#2196F3","#03A9F4","#00BCD4","#009688","#4CAF50","#8BC34A","#CDDC39","#FFEB3B","#FFC107","#FF9800","#FF5722","#795548","#9E9E9E","#607D8B"][i];
@@ -149,9 +179,8 @@ ${this.getRenderedDataPoints()}
         }).render();
       }
       update(0);
-      d3.select("#slider-time").on("mousemove", function() {
-        update(parseInt(this.value));
-      });
+
+
 
         </script>
         </body>
