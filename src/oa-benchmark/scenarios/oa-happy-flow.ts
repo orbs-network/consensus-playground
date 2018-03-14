@@ -4,6 +4,7 @@ import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import StableConstantDelay from "../../simulation/connections/StableConstantDelay";
 import bind from "bind-decorator";
 import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 
 const NUM_NODES = [10];
 const COMMITTEE_SIZES = [4]; // [5, 7];
@@ -47,7 +48,7 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
     for (const n of NUM_NODES) {
       for (const m of COMMITTEE_SIZES) {
         for (const k of SHARING_THRESHOLDS) {
-          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n), faultyNodeName: "HonestNode" };
+          const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: Math.min(m, n), numByz: NUM_BYZ, sharingThreshold: Math.min(k, n), faultyNodeName: "HonestNode", networkConfiguration: OrbsScenario.getDefaultNetwork(n) };
           oaConfigs.push(oaConfig);
           c++;
         }

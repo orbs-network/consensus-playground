@@ -2,20 +2,22 @@ import * as _ from "lodash";
 import BaseOrbsScenarioWithNode, { OrbsExpConfig } from "../BaseOrbsScenarioWithNode";
 import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAndPacketLoss";
+import BandwidthConnection from "../../simulation/connections/BandwidthConnection";
 import bind from "bind-decorator";
 import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+import OrbsBaseNode from "../../algorithms/oa-pbft/OrbsBaseNode";
 import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 
 
 const NUM_NODES = [10];
 const COMMITTEE_SIZES = [7];
-const NUM_BYZ = [0, 1, 2, 3];
+const NUM_BYZ = [0, 1, 2, 3]; // these won't actually be faulty, but used to determine f.
 const SHARING_THRESHOLDS = [5];
 const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 100;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
-const FAULTY_NODE_NAME = "FaultyNode";
+const FAULTY_NODE_NAME = "HonestNode";
 const NETWORK_MODE = NetworkMode.Fastcast;
 
 
@@ -29,23 +31,27 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   createNodes(): BaseNode[] {
     const nodes = [];
     for (let i = 0; i < this.oaConfig.nNodesToCreate; i++) {
-      if (i < this.oaConfig.nNodesToCreate - this.oaConfig.numByz) nodes.push(new this.Node(this));
-      else nodes.push(new this.FaultyNode(this));
+      nodes.push(new this.Node(this)); // no faulty nodes currently;
     }
     return nodes;
   }
 
   @bind
-  connectNodes(nodes: BaseNode[]): void {
+  connectNodes(nodes: OrbsBaseNode[]): void {
+    const networkConfiguration = this.oaConfig.networkConfiguration;
     for (const fromNode of nodes) {
+      // set bandwidth according to network configuration
+      fromNode.setBandwidth(networkConfiguration.nodeBandwidths[fromNode.nodeNumber - 1]);
       for (const toNode of nodes) {
         if (fromNode !== toNode) {
-          const connection = new RandomDelayAndPacketLoss(this, fromNode, toNode, NETWORK_MIN_DELAY_MS, NETWORK_MAX_DELAY_MS, NETWORK_PACKET_LOSS_PROBABILITY);
+          const connectionParams = networkConfiguration.connectivityMatrix[networkConfiguration.nodeRegions[fromNode.nodeNumber - 1]][networkConfiguration.nodeRegions[toNode.nodeNumber - 1]];
+          const connection = new BandwidthConnection(this, fromNode, toNode, connectionParams.minDelayMs, connectionParams.maxDelayMs);
           fromNode.outgoingConnections.push(connection);
         }
       }
     }
   }
+
 
 
   static configs(): OrbsExpConfig[] {

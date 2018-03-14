@@ -1,6 +1,7 @@
 import BaseScenario from "../simulation/BaseScenario";
 import BaseNode, { NodeModule } from "../simulation/BaseNode";
-import OrbsScenario  from "../scenarios/oa-pbft/OrbsScenario";
+import OrbsScenario from "../scenarios/oa-pbft/OrbsScenario";
+import { NetworkConfiguration } from "../scenarios/oa-pbft/OrbsScenario";
 import bind from "bind-decorator";
 import { NetworkMode } from "../algorithms/oa-pbft/NetworkInterface";
 
@@ -11,6 +12,7 @@ export interface OrbsExpConfig {
   numByz: number;
   sharingThreshold: number;
   faultyNodeName: string;
+  networkConfiguration: NetworkConfiguration;
 }
 
 export default abstract class BaseOrbsScenarioWithNode extends OrbsScenario {
