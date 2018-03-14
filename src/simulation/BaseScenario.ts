@@ -12,6 +12,7 @@ export default abstract class BaseScenario {
   public numNodes: number;
   public statistics: Statistics;
   public nodes: BaseNode[];
+  public timestepsToMs: number = 1.0;
   protected eventQueue: EventQueue;
 
   constructor(seed: string) {
@@ -26,6 +27,16 @@ export default abstract class BaseScenario {
   abstract connectNodes(nodes: BaseNode[]): void;
 
   abstract maxSimulationTimestampMs(): number;
+
+  @bind
+  msToTs(ms: number): number {
+    return Math.ceil(this.timestepsToMs * ms);
+  }
+
+  @bind
+  tsToMs(ts: number): number {
+    return Math.ceil((1 / this.timestepsToMs) * ts);
+  }
 
   @bind
   start() {
