@@ -14,8 +14,9 @@ import BandwidthEndpoint from "../../simulation/BandwidthEndpoint";
 
 import bind from "bind-decorator";
 
-const DEFAULT_BANDWIDTH = 100000;  // bits per second -> devide by basic time unit
-
+const DEFAULT_BANDWIDTH_BITS_SEC = 1000000000;
+const BITS_TO_BYTES = 8;
+const MS_TO_SEC = 1000;
 // const fillRangeModulo = (start, end, cap) => {
 //   return Array(end - start + 1).fill(0).map((item, index) => (start + index) % cap);
 // };
@@ -27,11 +28,17 @@ export class BandwidthNetworkInterface extends NetworkInterface implements Bandw
   protected bandwidth: number;
 
   constructor(nodeNumber: number, outgoingConnections: BaseConnection[], mempoolHandler: MempoolHandler, blockchainHandler: BlockchainHandler,
-    cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils, networkMode: NetworkPropagationMode, bandwidth: number = DEFAULT_BANDWIDTH ) {
+    cryptoHandler: CryptoHandler, consensusHandler: ConsensusHandler, utils: Utils, networkMode: NetworkPropagationMode, bandwidth: number = DEFAULT_BANDWIDTH_BITS_SEC ) {
     super(nodeNumber, outgoingConnections, mempoolHandler, blockchainHandler, cryptoHandler, consensusHandler, utils, networkMode);
     this.txBand = {};
     this.rxBand = {};
-    this.bandwidth = bandwidth;
+    this.bandwidth = this.bwPerSecToBwPerTs(bandwidth);
+  }
+
+  @bind
+  bwPerSecToBwPerTs(bwBitsSec: number): number {
+    const bandwidthBytesTs = (bwBitsSec / BITS_TO_BYTES) / this.utils.scenario.msToTs(MS_TO_SEC);
+    return bandwidthBytesTs;
   }
 
   @bind
@@ -43,8 +50,8 @@ export class BandwidthNetworkInterface extends NetworkInterface implements Bandw
 
   @bind
   setBandwidth(bandwidth: number): void {
-    this.utils.logger.debug(`Setting bandwidth to be ${bandwidth}`);
-    this.bandwidth = bandwidth;
+    this.utils.logger.debug(`Setting bandwidth to be ${this.bwPerSecToBwPerTs(bandwidth)}`);
+    this.bandwidth = this.bwPerSecToBwPerTs(bandwidth);
   }
 
   @bind

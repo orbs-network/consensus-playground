@@ -9,12 +9,13 @@ import OrbsBaseNode from "../../algorithms/oa-pbft/OrbsBaseNode";
 import OrbsScenario, { OrbsExpConfig } from "../../scenarios/oa-pbft/OrbsScenario";
 
 
-const NUM_NODES = [10];
-const COMMITTEE_SIZES = [7];
+const NUM_NODES = [10, 20, 30, 50];
+const COMMITTEE_SIZES = [7, 10, 15, 20];
 const NUM_BYZ = [0, 1, 2, 3]; // these won't actually be faulty, but used to determine f.
 const SHARING_THRESHOLDS = [5];
 const ETX_SIZES_BYTES = [250, 500];
 const NUM_ETXS_PER_BLOCK = [1000, 5000];
+const NODE_BW_BITS_SEC = [1000000000, 500000000, 100000000];
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 const FAULTY_NODE_NAME = "HonestNode";
 const NETWORK_MODE = NetworkPropagationMode.Fastcast;
@@ -63,11 +64,13 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
           for (const b of NUM_BYZ) {
             for (const e of ETX_SIZES_BYTES) {
               for (const num_etxs of NUM_ETXS_PER_BLOCK) {
-                const committeeSize = Math.min(m, n);
-                const numByz = Math.min(committeeSize, b);
-                const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: committeeSize, numByz: numByz, sharingThreshold: Math.min(k, n), faultyNodeName: FAULTY_NODE_NAME, networkConfiguration: OrbsScenario.getDefaultNetwork(n, e, num_etxs) };
-                oaConfigs.push(oaConfig);
-                c++;
+                  for (const bw_bits of NODE_BW_BITS_SEC) {
+                  const committeeSize = Math.min(m, n);
+                  const numByz = Math.min(committeeSize, b);
+                  const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: committeeSize, numByz: numByz, sharingThreshold: Math.min(k, n), faultyNodeName: FAULTY_NODE_NAME, networkConfiguration: OrbsScenario.getDefaultNetwork(n, e, num_etxs, bw_bits) };
+                  oaConfigs.push(oaConfig);
+                  c++;
+                }
               }
             }
           }

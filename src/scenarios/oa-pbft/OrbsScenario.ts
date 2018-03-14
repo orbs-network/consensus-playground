@@ -7,16 +7,18 @@ import bind from "bind-decorator";
 import Statistics from "../../simulation/Statistics";
 
 
-const MAX_SIMULATION_TIMESTAMP_MS = 100;
-const NETWORK_MODE = NetworkPropagationMode.Broadcast;
+const MAX_SIMULATION_TIMESTAMP_MS = 10000;
+const NETWORK_MODE = NetworkPropagationMode.Fastcast;
 
-const DEFAULT_BANDWIDTH_BITS_SEC = 1000000;
+const DEFAULT_BANDWIDTH_BITS_SEC = 1000000000;
 const NETWORK_MIN_DELAY_MS = 10;
 const NETWORK_MAX_DELAY_MS = 370;
 const DEFAULT_MSG_SIZE_BYTES = 500;
 const DEFAULT_ETX_SIZE_BYTES = 250;
 const DEFAULT_SHARE_SIZE_BYTES = 60;
 const DEFAULT_NUM_ETX_PER_BLOCK = 1000;
+
+
 
 export interface OrbsExpConfig {
   name: string;
@@ -67,9 +69,9 @@ export default abstract class OrbsScenario extends BaseScenario {
     return OrbsScenario.getDefaultNetwork(this.numNodes);
   }
 
-  static getDefaultNetwork(numNodes: number, etxSizeBytes: number = DEFAULT_ETX_SIZE_BYTES, numEtxsPerBlock: number = DEFAULT_NUM_ETX_PER_BLOCK, defaultMsgSizeBytes: number = DEFAULT_MSG_SIZE_BYTES, etxShareBytes: number = DEFAULT_SHARE_SIZE_BYTES): NetworkConfiguration {
+  static getDefaultNetwork(numNodes: number, etxSizeBytes: number = DEFAULT_ETX_SIZE_BYTES, numEtxsPerBlock: number = DEFAULT_NUM_ETX_PER_BLOCK, bandwidthBitsSec: number = DEFAULT_BANDWIDTH_BITS_SEC, defaultMsgSizeBytes: number = DEFAULT_MSG_SIZE_BYTES, etxShareBytes: number = DEFAULT_SHARE_SIZE_BYTES): NetworkConfiguration {
     const numRegions = 1;
-    const nodeBandwidths: Array<number> = new Array(numNodes).fill(DEFAULT_BANDWIDTH_BITS_SEC);
+    const nodeBandwidths: Array<number> = new Array(numNodes).fill(bandwidthBitsSec);
     const nodeRegions: Array<number> = new Array(numNodes).fill(0);
     const connectivityMatrix = [];
     for (const i of _.range(numRegions)) {

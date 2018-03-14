@@ -62,9 +62,9 @@ export default abstract class BaseScenario {
         this.logger.error(`Event timestamp is lower than current time!   ${JSON.stringify(event)}`);
         continue;
       }
-      if (event.timestamp > this.currentTimestamp) {
-        this.logger.log(`Current Time: ${this.currentTimestamp}`, debugThreshold);
-      }
+      // if (event.timestamp > this.currentTimestamp) {
+      //   this.logger.log(`Current Time: ${this.currentTimestamp}`, debugThreshold);
+      // }
       if (event.timestamp > this.maxSimulationTimestampMs()) break;
       this.currentTimestamp = event.timestamp;
       event.target.handleEvent(event);
