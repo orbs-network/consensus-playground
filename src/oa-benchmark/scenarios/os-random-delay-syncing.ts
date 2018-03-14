@@ -4,7 +4,7 @@ import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAndPacketLoss";
 import BandwidthConnection from "../../simulation/connections/BandwidthConnection";
 import bind from "bind-decorator";
-import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+import { NetworkPropagationMode } from "../../algorithms/oa-pbft/NetworkInterface";
 import OrbsBaseNode from "../../algorithms/oa-pbft/OrbsBaseNode";
 import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 
@@ -18,7 +18,7 @@ const NETWORK_MAX_DELAY_MS = 100;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 const FAULTY_NODE_NAME = "FaultyForFewTermsNode";
-const NETWORK_MODE = NetworkMode.Fastcast;
+const NETWORK_MODE = NetworkPropagationMode.Fastcast;
 
 export default class Scenario extends BaseOrbsScenarioWithNode {
 
@@ -78,8 +78,10 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   }
 
   @bind
-  getNetworkMode(): NetworkMode {
+  getNetworkMode(): NetworkPropagationMode {
     return NETWORK_MODE;
   }
+
+
 
 }

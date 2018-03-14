@@ -14,6 +14,7 @@ import { CryptoHandler } from "./CryptoHandler";
 
 import OrbsBaseNode from "./OrbsBaseNode";
 // import BaseScenario from "../../simulation/BaseScenario";
+import BaseOrbsScenarioWithNode from "../../oa-benchmark/BaseOrbsScenarioWithNode";
 import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
@@ -34,6 +35,7 @@ export default class HonestNode extends OrbsBaseNode {
   onStart(event: NodeStartEvent): void {
     this.logger.debug(`Starting...`);
     if (this.scenario instanceof OrbsScenario) {
+      // this.logger.log(`numByz ${this.scenario.numByz}`, this.logger.getDebugThreshold());
       this.utils.numNodes = this.scenario.numNodes; // after nodes created, so this is the correct value
       this.utils.committeeSize = this.scenario.committeeSize;
       this.utils.numByz = this.scenario.numByz;

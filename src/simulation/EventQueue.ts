@@ -3,31 +3,49 @@ import BaseEvent from "./BaseEvent";
 import bind from "bind-decorator";
 
 export default class EventQueue {
-  protected internalQueue: PriorityQueue<BaseEvent>;
+  private _length: number = 0;
+  public get length() { return this._length; }
+
+  protected internalQueue: Object;
+  protected helperQueue: PriorityQueue<number>;
 
   constructor() {
-    this.internalQueue = new PriorityQueue({ comparator: BaseEvent.comparator });
+      this.internalQueue = {};
+      this.helperQueue = new PriorityQueue({
+         comparator: function(a: number, b: number) {return a - b; } });
   }
 
   @bind
   enqueue(event: BaseEvent): void {
-    this.internalQueue.queue(event);
+    if (!this.internalQueue[event.timestamp]) {
+        this.internalQueue[event.timestamp] = new Array();
+        this.helperQueue.queue(event.timestamp);
+    }
+    this.internalQueue[event.timestamp].push(event);
+    this._length++;
   }
 
   @bind
   dequeue(): BaseEvent {
-    const res = this.internalQueue.dequeue();
+    if (!this._length) throw new Error("Empty queue");
+    const header = this.helperQueue.peek();
+    const res = this.internalQueue[header].shift();
+    if (this.internalQueue[header].length <= 0) {
+      delete this.internalQueue[header];
+      this.helperQueue.dequeue();
+    }
+    this._length--;
     return res;
   }
 
   @bind
   empty(): boolean {
-    return this.internalQueue.length === 0;
+    return this._length === 0;
   }
 
   @bind
   size(): number {
-    return this.internalQueue.length;
+    return this._length;
   }
 
 }

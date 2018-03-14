@@ -141,9 +141,10 @@ export class Decryptor {
       const numPotentialSharesPrior = this.countPotentialShares(term);
       this.committedEBtoDecrypt[term].blockShares[blockShare.nodeNumber - 1] = blockShare;
       const numPotentialSharesPost = this.countPotentialShares(term);
-      this.utils.logger.log(`Received share from ${blockShare.nodeNumber} for block (${term},${blockShare.blockHash}, status is ${this.getShareStatusString(term)})`);
+      this.utils.logger.log(`Received share of Node ${blockShare.nodeNumber} for block (${term},${blockShare.blockHash}, from ${msg.sender}, status is ${this.getShareStatusString(term)})`);
 
       if ((numPotentialSharesPost <= this.utils.sharingThreshold) && (numPotentialSharesPrior < numPotentialSharesPost)) { // forward only unseen shares - even unverified up until threshold, including
+        msg.sender = this.utils.nodeNumber;
         this.netInterface.fastcast(msg); // TODO fastcast
       }
 

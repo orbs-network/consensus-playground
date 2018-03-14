@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import bind from "bind-decorator";
 import Random from "../../simulation/Random";
-import BaseScenario from "../../simulation/BaseScenario";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 import Logger from "../../simulation/Logger";
 
 // export const N = 5; // number of nodes in the system
@@ -120,7 +120,7 @@ export interface BlockShare {
 }
 
 export class Utils {
-  public scenario: BaseScenario;
+  public scenario: OrbsScenario;
   public numNodes: number; // n
   public committeeSize: number; // m
   public numByz: number; // f
@@ -131,11 +131,14 @@ export class Utils {
 
   // number of nodes, committee size and number of Byzantine nodes are handled by
   // the Node since the number of nodes is only determined after the scenario generates them.
-  constructor(scenario: BaseScenario, nodeNumber: number, logger: Logger) {
+  constructor(scenario: OrbsScenario, nodeNumber: number, logger: Logger) {
     this.scenario = scenario;
     this.nodeNumber = nodeNumber;
     this.logger = logger;
     this.sleeping = false;
+    this.numByz = scenario.numByz; // TODO duplicate - only need scenario!!
+    this.committeeSize = scenario.committeeSize;
+    this.numNodes = scenario.numNodes;
   }
 
   static hashContent(content: number): string {

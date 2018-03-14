@@ -4,7 +4,7 @@ import BaseNode from "../../simulation/BaseNode";
 import { HonestNode, FaultyForFewTermsNode } from "../../algorithms/oa-pbft";
 import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAndPacketLoss";
 import bind from "bind-decorator";
-import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+// import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
 
 const NUM_NODES = 10;
 const COMMITTEE_SIZE = 4;
@@ -14,7 +14,7 @@ const NETWORK_MIN_DELAY_MS = 40;
 const NETWORK_MAX_DELAY_MS = 60;
 const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
-const NETWORK_MODE = NetworkMode.Broadcast;
+// const NETWORK_MODE = NetworkMode.Broadcast;
 
 export default class Scenario extends OrbsScenario {
 
@@ -55,9 +55,9 @@ export default class Scenario extends OrbsScenario {
     return MAX_SIMULATION_TIMESTAMP_MS;
   }
 
-  @bind
-  getNetworkMode(): NetworkMode {
-    return NETWORK_MODE;
-  }
+  // @bind
+  // getNetworkMode(): NetworkMode {
+  //   return NETWORK_MODE;
+  // }
 
 }

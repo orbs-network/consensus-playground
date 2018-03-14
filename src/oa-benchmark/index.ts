@@ -2,7 +2,8 @@ import * as _ from "lodash";
 import * as path from "path";
 import * as shell from "shelljs";
 import BenchmarkOutput from "./BenchmarkOutput";
-import { OrbsScenarioWithNodeModule } from "./BaseOrbsScenarioWithNode";
+// import { OrbsScenarioWithNodeModule } from "./BaseOrbsScenarioWithNode";
+import BaseOrbsScenarioWithNode from "./BaseOrbsScenarioWithNode";
 import { NodeModule } from "../simulation/BaseNode";
 import Statistics from "../simulation/Statistics";
 
@@ -10,7 +11,7 @@ const fs = require("fs");
 const dir = "simulations/oa-benchmark-output";
 const now = new Date(Date.now());
 
-function loadScenario(scenarioName: string): typeof OrbsScenarioWithNodeModule {
+function loadScenario(scenarioName: string): typeof BaseOrbsScenarioWithNode {
   try {
     return require(`./scenarios/${scenarioName}`).default;
   } catch (e) {

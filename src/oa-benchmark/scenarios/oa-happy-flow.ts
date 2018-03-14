@@ -3,7 +3,7 @@ import BaseOrbsScenarioWithNode, { OrbsExpConfig } from "../BaseOrbsScenarioWith
 import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import StableConstantDelay from "../../simulation/connections/StableConstantDelay";
 import bind from "bind-decorator";
-import { NetworkMode } from "../../algorithms/oa-pbft/NetworkInterface";
+import { NetworkPropagationMode } from "../../algorithms/oa-pbft/NetworkInterface";
 import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 
 const NUM_NODES = [10];
@@ -12,11 +12,11 @@ const NUM_BYZ = 1;
 const SHARING_THRESHOLDS = [2]; // [2, 4];
 const NETWORK_DELAY_MS = 50;
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
-const NETWORK_MODE = NetworkMode.Fastcast;
+const NETWORK_MODE = NetworkPropagationMode.Fastcast;
 
 
 export default class Scenario extends BaseOrbsScenarioWithNode {
-  public oaConfig: OrbsExpConfig;
+  // public oaConfig: OrbsExpConfig;
 
   constructor(seed: string, Node: typeof NodeModule, TestNode: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
     super(seed, Node, TestNode, FaultyNode, oaConfig);
@@ -57,14 +57,14 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
     return oaConfigs;
   }
 
-  @bind
-  maxSimulationTimestampMs(): number {
-    return MAX_SIMULATION_TIMESTAMP_MS;
-  }
+  // @bind
+  // maxSimulationTimestampMs(): number {
+  //   return MAX_SIMULATION_TIMESTAMP_MS;
+  // }
 
-  @bind
-  getNetworkMode(): NetworkMode {
-    return NETWORK_MODE;
-  }
+  // @bind
+  // getNetworkMode(): NetworkMode {
+  //   return NETWORK_MODE;
+  // }
 
 }
