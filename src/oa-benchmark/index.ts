@@ -100,8 +100,12 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
       output.addAlgorithmResult(configName, "forks", Statistics.hasForks(scenario) ? "yes" : "no");
       output.addAlgorithmResult(configName, "max timestamp", scenario.statistics.maxTimestampMs.toString());
       output.addAlgorithmResult(configName, "closed blocks", Statistics.minClosedBlocks(scenario).toString() + " - " + Statistics.maxClosedBlocks(scenario).toString());
+      output.addAlgorithmResult(configName, "base message size (bytes)", scenario.oaConfig.networkConfiguration.defaultMsgSizeBytes.toString());
+      output.addAlgorithmResult(configName, "etx size (bytes)", scenario.oaConfig.networkConfiguration.etxSizeBytes.toString());
+      output.addAlgorithmResult(configName, "number of etxs / block", scenario.oaConfig.networkConfiguration.numEtxsPerBlock.toString());
+      output.addAlgorithmResult(configName, "share size (bytes)", scenario.oaConfig.networkConfiguration.etxShareBytes.toString());
       output.addAlgorithmResult(configName, "total sent messages", scenario.statistics.totalSentMessages.toString());
-      output.addAlgorithmResult(configName, "total bytes", scenario.statistics.totalSentBytes.toString());
+      output.addAlgorithmResult(configName, "total bytes", scenario.statistics.totalSentBytes.toString()); // TODO replace this with message sizes
       output.addAlgorithmResult(configName, "messages/node", (_.min(scenario.statistics.totalReceivedMessagesPerNode) || 0).toString() + " - " + (_.max(scenario.statistics.totalReceivedMessagesPerNode) || 0).toString());
       output.addAlgorithmResult(configName, "broadcasts", scenario.statistics.totalBroadcasts.toString());
       output.addAlgorithmResult(configName, "unicasts", scenario.statistics.totalUnicasts.toString());

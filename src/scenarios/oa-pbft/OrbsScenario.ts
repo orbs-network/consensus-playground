@@ -2,6 +2,7 @@ import * as _ from "lodash";
 import BaseNode from "../../simulation/BaseNode";
 import BaseScenario from "../../simulation/BaseScenario";
 import { NetworkPropagationMode } from "../../algorithms/oa-pbft/NetworkInterface";
+import { Utils, Message, ConsensusMessageType, CryptoMessageType, SyncerMessageType } from "../../algorithms/oa-pbft/common";
 import bind from "bind-decorator";
 import Statistics from "../../simulation/Statistics";
 
@@ -12,6 +13,20 @@ const NETWORK_MODE = NetworkPropagationMode.Broadcast;
 const DEFAULT_BANDWIDTH_BITS_SEC = 1000000;
 const NETWORK_MIN_DELAY_MS = 10;
 const NETWORK_MAX_DELAY_MS = 370;
+const DEFAULT_MSG_SIZE_BYTES = 500;
+const DEFAULT_ETX_SIZE_BYTES = 250;
+const DEFAULT_SHARE_SIZE_BYTES = 60;
+const DEFAULT_NUM_ETX_PER_BLOCK = 1000;
+
+export interface OrbsExpConfig {
+  name: string;
+  nNodesToCreate: number;
+  committeeSize: number;
+  numByz: number;
+  sharingThreshold: number;
+  faultyNodeName: string;
+  networkConfiguration: NetworkConfiguration;
+}
 
 export default abstract class OrbsScenario extends BaseScenario {
   public committeeSize: number;
@@ -20,10 +35,13 @@ export default abstract class OrbsScenario extends BaseScenario {
   public maxSimulationTimestamp: number;
   protected seed: string;
   protected networkPropagationMode: NetworkPropagationMode;
+  public oaConfig: OrbsExpConfig;
 
 
-  constructor(seed: string) {
+  constructor(seed: string, oaConfig: OrbsExpConfig = undefined) {
     super(seed);
+    if (!oaConfig) console.log(`Undefined oa config`);
+    this.oaConfig = oaConfig;
     this.seed = seed;
     this.committeeSize = this.numNodes;
     this.numByz = 0;
@@ -49,7 +67,7 @@ export default abstract class OrbsScenario extends BaseScenario {
     return OrbsScenario.getDefaultNetwork(this.numNodes);
   }
 
-  static getDefaultNetwork(numNodes: number): NetworkConfiguration {
+  static getDefaultNetwork(numNodes: number, etxSizeBytes: number = DEFAULT_ETX_SIZE_BYTES, numEtxsPerBlock: number = DEFAULT_NUM_ETX_PER_BLOCK, defaultMsgSizeBytes: number = DEFAULT_MSG_SIZE_BYTES, etxShareBytes: number = DEFAULT_SHARE_SIZE_BYTES): NetworkConfiguration {
     const numRegions = 1;
     const nodeBandwidths: Array<number> = new Array(numNodes).fill(DEFAULT_BANDWIDTH_BITS_SEC);
     const nodeRegions: Array<number> = new Array(numNodes).fill(0);
@@ -60,7 +78,7 @@ export default abstract class OrbsScenario extends BaseScenario {
         connectivityMatrix[i][j] = { minDelayMs: NETWORK_MIN_DELAY_MS, maxDelayMs: NETWORK_MAX_DELAY_MS };
       }
     }
-    const networkConfiguration = { nodeBandwidths: nodeBandwidths, nodeRegions: nodeRegions, connectivityMatrix: connectivityMatrix };
+    const networkConfiguration = new NetworkConfiguration(nodeBandwidths, nodeRegions, connectivityMatrix, etxSizeBytes, numEtxsPerBlock, defaultMsgSizeBytes, etxShareBytes);
     return networkConfiguration;
   }
 
@@ -92,7 +110,7 @@ export class ScenarioModule extends OrbsScenario {
   connectNodes(nodes: BaseNode[]) {}
   maxSimulationTimestampMs() { return 0; }
   getNetworkPropagationMode() { return NetworkPropagationMode.Broadcast; }
-  getNetworkConfiguration() { return { nodeBandwidths: [], nodeRegions: [], connectivityMatrix: [] }; }
+  getNetworkConfiguration() { return OrbsScenario.getDefaultNetwork(1); }
 }
 
 export interface ConnectionParams {
@@ -100,8 +118,87 @@ export interface ConnectionParams {
   maxDelayMs: number;
 }
 
-export interface NetworkConfiguration {
-  nodeBandwidths: number[]; // nodeBandwidths[i] = bandwidth in bits / second of node i
-  nodeRegions: number[]; // nodeRegions[i]= region number of node i
-  connectivityMatrix: ConnectionParams[][]; // connectivityMatrix[i][j] min,max delay
+export class NetworkConfiguration {
+  public nodeBandwidths: number[]; // nodeBandwidths[i] = bandwidth in bits / second of node i
+  public nodeRegions: number[]; // nodeRegions[i]= region number of node i
+  public connectivityMatrix: ConnectionParams[][]; // connectivityMatrix[i][j] min,max delay
+  public etxSizeBytes: number;
+  public etxShareBytes: number;
+  public numEtxsPerBlock: number;
+  public defaultMsgSizeBytes: number;
+
+  constructor(nodeBandwidths: number[], nodeRegions: number[], connectivityMatrix: ConnectionParams[][], etxSizeBytes: number, numEtxsPerBlock: number, defaultMsgSizeBytes: number, etxShareBytes: number) {
+    this.nodeBandwidths = nodeBandwidths;
+    this.nodeRegions = nodeRegions;
+    this.connectivityMatrix = connectivityMatrix;
+    this.etxSizeBytes = etxSizeBytes;
+    this.numEtxsPerBlock = numEtxsPerBlock;
+    this.defaultMsgSizeBytes = defaultMsgSizeBytes;
+    this.etxShareBytes = etxShareBytes;
+
+  }
+
+  @bind
+  toString(): string {
+    let str: string = "";
+    str = str + (`nodeBandwidths: ${this.nodeBandwidths} \n`);
+    str = str + (`nodeRegions: ${this.nodeRegions} \n`);
+    str = str + (`connectivityMatrix: ${this.connectivityMatrix} \n`);
+    str = str + (`etxSizeBytes: ${this.etxSizeBytes} \n`);
+    str = str + (`numEtxsPerBlock: ${this.numEtxsPerBlock} \n`);
+    str = str + (`defaultMsgSizeBytes: ${this.defaultMsgSizeBytes}\n`);
+    str = str + (`etxShareBytes: ${this.etxShareBytes}\n`);
+    return str;
+
+  }
+
+  @bind
+  getMessageSize(msg: Message): number {
+    const blockSize = (this.etxSizeBytes * this.numEtxsPerBlock);
+    switch (Utils.getMessageTopType(msg.type)) {
+      case "ConsensusMessage": {
+        switch (msg.conMsgType) {
+          case ConsensusMessageType.PrePrepare: {
+            return blockSize + this.defaultMsgSizeBytes;
+          }
+          case ConsensusMessageType.NewView: {
+            return blockSize + this.defaultMsgSizeBytes;
+          }
+          case ConsensusMessageType.Committed: {
+            return blockSize + this.defaultMsgSizeBytes;
+          }
+          default: {
+            return this.defaultMsgSizeBytes;
+          }
+        }
+      }
+
+      case "CryptoMessage": {
+        switch (msg.cryptoMsgType) {
+          case CryptoMessageType.BlockShare: {
+            return (this.numEtxsPerBlock * this.etxShareBytes) + this.defaultMsgSizeBytes;
+          }
+          default: {
+            return this.defaultMsgSizeBytes;
+          }
+        }
+      }
+
+      case "SyncMessage": {
+        switch (msg.syncerMsgType) {
+          case SyncerMessageType.SyncPeer: {
+            return msg.blocks.length * blockSize + this.defaultMsgSizeBytes;
+          }
+          default: {
+            return this.defaultMsgSizeBytes;
+          }
+        }
+      }
+
+      default: {
+        return this.defaultMsgSizeBytes;
+      }
+
+    }
+  }
 }

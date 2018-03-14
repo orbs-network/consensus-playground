@@ -66,7 +66,7 @@ export class Syncer {
   requestSync(): void {
     const atTerm = this.blockchainHandler.blockchain.getLastBlock().term;
     this.syncing = true;
-    const requestSyncMsg: Message = { sender: this.utils.nodeNumber, type: "SyncMessage" + "/" + SyncerMessageType.RequestSync, syncerMsgType: SyncerMessageType.RequestSync, term: atTerm };
+    const requestSyncMsg: Message = { sender: this.utils.nodeNumber, type: "SyncMessage" + "/" + SyncerMessageType.RequestSync, syncerMsgType: SyncerMessageType.RequestSync, term: atTerm, size_bytes: (this.utils.scenario.oaConfig.networkConfiguration.defaultMsgSizeBytes) };
     this.netInterface.multicast(this.peers, requestSyncMsg); // TODO wasteful, unless assuming unlimited bandwidth- should use pings
   }
 
@@ -113,7 +113,7 @@ export class Syncer {
     // TODO for more accurate results you could just send EB,BP and SBs and save on sending DB
     const blockIDsToSend = blockIDs.sort((a, b) => a - b);
     const blocks = (blockIDsToSend.length > 0) ?  this.blockchainHandler.blockchain.getBlocksRange(blockIDsToSend[0], blockIDsToSend[blockIDsToSend.length - 1]) : [];
-    const syncPeerMsg: Message = { type: "SyncMessage" + "/" + SyncerMessageType.SyncPeer, sender: this.utils.nodeNumber, term: this.consensusHandler.consensusEngine.getTerm(), syncerMsgType: SyncerMessageType.SyncPeer, blocks: blocks };
+    const syncPeerMsg: Message = { type: "SyncMessage" + "/" + SyncerMessageType.SyncPeer, sender: this.utils.nodeNumber, term: this.consensusHandler.consensusEngine.getTerm(), syncerMsgType: SyncerMessageType.SyncPeer, blocks: blocks, size_bytes: (this.utils.scenario.oaConfig.networkConfiguration.defaultMsgSizeBytes + (blocks.length * (this.utils.scenario.oaConfig.networkConfiguration.etxSizeBytes * this.utils.scenario.oaConfig.networkConfiguration.numEtxsPerBlock) + (blocks.length * this.utils.scenario.oaConfig.networkConfiguration.etxShareBytes * this.utils.scenario.oaConfig.networkConfiguration.numEtxsPerBlock * this.utils.sharingThreshold))) };
     this.netInterface.unicast(toNode, syncPeerMsg);
     this.utils.logger.debug(`Sending blocks ${blockIDsToSend} to peer ${toNode}: ${JSON.stringify(syncPeerMsg)}`);
   }

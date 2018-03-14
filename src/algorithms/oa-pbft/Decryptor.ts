@@ -108,7 +108,7 @@ export class Decryptor {
 
   @bind
   generateShareBlock(term: number): void {
-    let shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, term: term };
+    let shareMsg: Message = { sender: this.utils.nodeNumber, type: "CryptoMessage" + "/" + CryptoMessageType.BlockShare, cryptoMsgType: CryptoMessageType.BlockShare, term: term, size_bytes: (this.utils.scenario.oaConfig.networkConfiguration.numEtxsPerBlock * this.utils.scenario.oaConfig.networkConfiguration.etxShareBytes) };
     const dbs: DecryptorBlockState = this.committedEBtoDecrypt[term];
     if (dbs && dbs.encryptedBlock) {
       this.utils.logger.log(`Generate Share Block (${term}) Status is ${this.getShareStatusString(term)}.`);

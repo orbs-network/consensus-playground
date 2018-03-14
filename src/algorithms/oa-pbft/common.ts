@@ -13,8 +13,33 @@ const BYZ_MAJORITY = 2.0 / 3.0;
 const HASH_LENGTH = 8; // pseudo hash representing block hash
 export const BASE_MSG_SIZE_BYTES = 1000;
 
+export class MapWithDefault {
+  protected defaultValue: number;
+  public sMap: StrMap<number>;
+
+  constructor(dValue: number) {
+    this.defaultValue = dValue;
+    this.sMap = {};
+  }
+
+  @bind
+  get(key: string): number {
+    if (!this.sMap[key]) return this.defaultValue;
+    else return this.sMap[key];
+  }
+
+  @bind
+  set(key: string, value: number): void {
+    this.sMap[key] = value;
+  }
+}
+
 export interface Map<T> {
   [K: number]: T;
+}
+
+export interface StrMap<T> {
+  [K: string]: T;
 }
 
 export enum ConsensusMessageType {
@@ -46,6 +71,8 @@ export class Cmap {
 
 
 }
+
+
 
 export interface BlockProof {
   term: number;
@@ -139,6 +166,12 @@ export class Utils {
     this.numByz = scenario.numByz; // TODO duplicate - only need scenario!!
     this.committeeSize = scenario.committeeSize;
     this.numNodes = scenario.numNodes;
+  }
+
+  static getMessageTopType(str: string): string {
+    const i = str.indexOf("/");
+    if (i > -1) return str.slice(0, i);
+    else return str;
   }
 
   static hashContent(content: number): string {

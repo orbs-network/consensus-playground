@@ -1,5 +1,5 @@
 import BaseConnection from "../BaseConnection";
-import BaseScenario from "../BaseScenario";
+import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
 import BaseNode from "../BaseNode";
 import MessageEvent from "../events/MessageEvent";
 import BandwidthEndpoint from "../BandwidthEndpoint";
@@ -11,13 +11,15 @@ export default class BandwidthConnection extends BaseConnection {
   public connectionDelayMs: number;
   protected minDelayMs: number;
   protected maxDelayMs: number;
+  protected scenario: OrbsScenario;
 
 
 
-  constructor(scenario: BaseScenario, from: any, to: any, minDelayMs: number, maxDelayMs: number, to_log: boolean = false) {
+  constructor(scenario: OrbsScenario, from: any, to: any, minDelayMs: number, maxDelayMs: number, to_log: boolean = false) {
     super(scenario, from, to, to_log);
     this.minDelayMs = Math.floor(minDelayMs);
     this.maxDelayMs = Math.ceil(maxDelayMs);
+    this.scenario = scenario;
   }
 
   /**
@@ -26,7 +28,7 @@ export default class BandwidthConnection extends BaseConnection {
   @bind
   send(message: any): void {
     const delayMs = this.scenario.randomizer.nextIntegerInRange(this.minDelayMs, this.maxDelayMs); // delay due to connection conditions
-    const messageSize = message.size_bytes ? message.size_bytes : 10000; // default for messages without specified size
+    const messageSize = message.size_bytes ? message.size_bytes : this.scenario.oaConfig.networkConfiguration.getMessageSize(message); // default for messages without specified size
     const txTime = this.from.addTxEvent(messageSize); // delay due to source congestion
     const arriveTime = txTime + delayMs; // delay due to source congestion + connection
     const rxTime = this.to.addRxEvent(messageSize, arriveTime); // delay due to target congestion

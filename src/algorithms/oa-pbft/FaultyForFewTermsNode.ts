@@ -81,9 +81,10 @@ export default class FaultyForFewTermsNode extends HonestNode {
       this.syncer.requestSync();
     }
 
-    switch (this.getMessageTopType(msg.type)) {
+    switch (Utils.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         this.consensusHandler.handleMessage(msg);
+        break;
       }
       case "MempoolMessage": {
         break;

@@ -1,10 +1,10 @@
 import * as _ from "lodash";
-import BaseOrbsScenarioWithNode, { OrbsExpConfig } from "../BaseOrbsScenarioWithNode";
+import BaseOrbsScenarioWithNode from "../BaseOrbsScenarioWithNode";
 import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAndPacketLoss";
 import bind from "bind-decorator";
 import { NetworkPropagationMode } from "../../algorithms/oa-pbft/NetworkInterface";
-import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
+import OrbsScenario, { OrbsExpConfig } from "../../scenarios/oa-pbft/OrbsScenario";
 
 
 const NUM_NODES = [10];

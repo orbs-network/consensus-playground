@@ -57,12 +57,7 @@ export default class HonestNode extends OrbsBaseNode {
 
   }
 
-  @bind
-  getMessageTopType(str: string): string {
-    const i = str.indexOf("/");
-    if (i > -1) return str.slice(0, i);
-    else return str;
-  }
+
 
   @bind
   onMessage(event: MessageEvent): void {
@@ -72,9 +67,10 @@ export default class HonestNode extends OrbsBaseNode {
       this.utils.logger.log(`Received message from term ${msg.term}, at term ${this.consensusEngine.getTerm()}. Entering syncing mode`);
       this.syncer.requestSync();
     }
-    switch (this.getMessageTopType(msg.type)) {
+    switch (Utils.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         this.consensusHandler.handleMessage(msg);
+        break;
       }
       case "MempoolMessage": {
         break;

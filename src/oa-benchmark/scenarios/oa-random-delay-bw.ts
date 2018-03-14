@@ -1,21 +1,20 @@
 import * as _ from "lodash";
-import BaseOrbsScenarioWithNode, { OrbsExpConfig } from "../BaseOrbsScenarioWithNode";
+import BaseOrbsScenarioWithNode from "../BaseOrbsScenarioWithNode";
 import BaseNode, { NodeModule } from "../../simulation/BaseNode";
 import RandomDelayAndPacketLoss from "../../simulation/connections/RandomDelayAndPacketLoss";
 import BandwidthConnection from "../../simulation/connections/BandwidthConnection";
 import bind from "bind-decorator";
 import { NetworkPropagationMode } from "../../algorithms/oa-pbft/NetworkInterface";
 import OrbsBaseNode from "../../algorithms/oa-pbft/OrbsBaseNode";
-import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
+import OrbsScenario, { OrbsExpConfig } from "../../scenarios/oa-pbft/OrbsScenario";
 
 
 const NUM_NODES = [10];
 const COMMITTEE_SIZES = [7];
 const NUM_BYZ = [0, 1, 2, 3]; // these won't actually be faulty, but used to determine f.
 const SHARING_THRESHOLDS = [5];
-const NETWORK_MIN_DELAY_MS = 5;
-const NETWORK_MAX_DELAY_MS = 100;
-const NETWORK_PACKET_LOSS_PROBABILITY = 0.0;
+const ETX_SIZES_BYTES = [250, 500];
+const NUM_ETXS_PER_BLOCK = [1000, 5000];
 const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 const FAULTY_NODE_NAME = "HonestNode";
 const NETWORK_MODE = NetworkPropagationMode.Fastcast;
@@ -39,6 +38,7 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   @bind
   connectNodes(nodes: OrbsBaseNode[]): void {
     const networkConfiguration = this.oaConfig.networkConfiguration;
+    console.log(`${this.oaConfig.networkConfiguration.toString()}`);
     for (const fromNode of nodes) {
       // set bandwidth according to network configuration
       fromNode.setBandwidth(networkConfiguration.nodeBandwidths[fromNode.nodeNumber - 1]);
@@ -61,11 +61,15 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
       for (const m of COMMITTEE_SIZES) {
         for (const k of SHARING_THRESHOLDS) {
           for (const b of NUM_BYZ) {
-            const committeeSize = Math.min(m, n);
-            const numByz = Math.min(committeeSize, b);
-            const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: committeeSize, numByz: numByz, sharingThreshold: Math.min(k, n), faultyNodeName: FAULTY_NODE_NAME, networkConfiguration: OrbsScenario.getDefaultNetwork(n) };
-            oaConfigs.push(oaConfig);
-            c++;
+            for (const e of ETX_SIZES_BYTES) {
+              for (const num_etxs of NUM_ETXS_PER_BLOCK) {
+                const committeeSize = Math.min(m, n);
+                const numByz = Math.min(committeeSize, b);
+                const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: committeeSize, numByz: numByz, sharingThreshold: Math.min(k, n), faultyNodeName: FAULTY_NODE_NAME, networkConfiguration: OrbsScenario.getDefaultNetwork(n, e, num_etxs) };
+                oaConfigs.push(oaConfig);
+                c++;
+              }
+            }
           }
         }
       }

@@ -2,19 +2,12 @@ import * as _ from "lodash";
 import BaseScenario from "../simulation/BaseScenario";
 import BaseNode, { NodeModule } from "../simulation/BaseNode";
 import OrbsScenario from "../scenarios/oa-pbft/OrbsScenario";
+import { OrbsExpConfig } from "../scenarios/oa-pbft/OrbsScenario";
 import { NetworkConfiguration } from "../scenarios/oa-pbft/OrbsScenario";
 import bind from "bind-decorator";
 import { NetworkPropagationMode } from "../algorithms/oa-pbft/NetworkInterface";
 
-export interface OrbsExpConfig {
-  name: string;
-  nNodesToCreate: number;
-  committeeSize: number;
-  numByz: number;
-  sharingThreshold: number;
-  faultyNodeName: string;
-  networkConfiguration: NetworkConfiguration;
-}
+
 
 
 const NUM_NODES = [10];
@@ -22,7 +15,7 @@ const COMMITTEE_SIZES = [4]; // [5, 7];
 const NUM_BYZ = 0;
 const SHARING_THRESHOLDS = [2]; // [2, 4];
 const NETWORK_DELAY_MS = 50;
-const MAX_SIMULATION_TIMESTAMP_MS = 100;
+const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 const NETWORK_MODE = NetworkPropagationMode.Fastcast;
 
 
@@ -30,11 +23,10 @@ export default class BaseOrbsScenarioWithNode extends OrbsScenario {
   protected Node: typeof NodeModule;
   protected TestNode: typeof NodeModule;
   protected FaultyNode: typeof NodeModule;
-  public oaConfig: OrbsExpConfig;
+
 
   constructor(seed: string, Node: typeof NodeModule, TestNode: typeof NodeModule, FaultyNode: typeof NodeModule, oaConfig: OrbsExpConfig) {
-    super(seed);
-    this.oaConfig = oaConfig;
+    super(seed, oaConfig);
     this.Node = Node;
     this.TestNode = TestNode;
     this.FaultyNode = FaultyNode;
@@ -65,10 +57,10 @@ export default class BaseOrbsScenarioWithNode extends OrbsScenario {
   @bind
   connectNodes(nodes: BaseNode[]): void { }
 
-  // @bind
-  // maxSimulationTimestampMs(): number {
-  //   return MAX_SIMULATION_TIMESTAMP_MS;
-  // }
+  @bind
+  maxSimulationTimestampMs(): number {
+    return MAX_SIMULATION_TIMESTAMP_MS;
+  }
 
   @bind
   getNetworkPropagationMode(): NetworkPropagationMode {
@@ -77,11 +69,15 @@ export default class BaseOrbsScenarioWithNode extends OrbsScenario {
 
 }
 
-// hack required to be able to instantiate dynamic instances polymorphically
-// export class OrbsScenarioWithNodeModule extends BaseOrbsScenarioWithNode {
-//   createNodes(): BaseNode[] { return []; }
-//   connectNodes(nodes: BaseNode[]) {}
-//   // configs() { return []; }
-//   maxSimulationTimestampMs() { return 0; }
-//   getNetworkMode() { return NetworkPropagationMode.Broadcast; }
+  // hack required; to be; able to; instantiate dynamic; instances polymorphically;
+  export class OrbsScenarioWithNodeModule extends BaseOrbsScenarioWithNode {
+    createNodes(): BaseNode[] { return []; }
+    connectNodes(nodes: BaseNode[]) {}
+    configs() { return []; }
+    maxSimulationTimestampMs() { return 0; }
+    getNetworkMode() { return NetworkPropagationMode.Broadcast; }
+
+}
+
+
 // }

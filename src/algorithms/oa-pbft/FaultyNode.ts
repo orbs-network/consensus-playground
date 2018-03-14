@@ -54,9 +54,10 @@ export default class FaultyNode extends HonestNode {
   @bind
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
-    switch (this.getMessageTopType(msg.type)) {
+    switch (Utils.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         // this.consensusHandler.handleMessage(msg);
+        break;
       }
       case "MempoolMessage": {
         break;

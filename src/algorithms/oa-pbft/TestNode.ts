@@ -132,7 +132,7 @@ export default class TestNode extends OrbsBaseNode {
   onMessage(event: MessageEvent): void {
     const msg = <Message>event.message;
     // this.utils.logger.log("Message is: " + msg.type + msg.sender + event.target.nodeNumber);
-    switch (this.getMessageTopType(msg.type)) {
+    switch (Utils.getMessageTopType(msg.type)) {
       case "ConsensusMessage": {
         this.consensusHandler.handleMessage(msg);
       }
