@@ -100,7 +100,7 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
       output.addAlgorithmResult(configName, "forks", Statistics.hasForks(scenario) ? "yes" : "no");
       output.addAlgorithmResult(configName, "max timestamp", scenario.statistics.maxTimestampMs.toString());
       output.addAlgorithmResult(configName, "closed blocks", Statistics.minClosedBlocks(scenario).toString() + " - " + Statistics.maxClosedBlocks(scenario).toString());
-      output.addAlgorithmResult(configName, "BW per node (bits/sec)", scenario.oaConfig.networkConfiguration.nodeBandwidths[0].toString()); // TODO mix and min, assuming all same here
+      output.addAlgorithmResult(configName, "BW per node (Mbits/sec)", (scenario.oaConfig.networkConfiguration.nodeBandwidths[0] / 1000000).toString()); // TODO mix and min, assuming all same here
       output.addAlgorithmResult(configName, "base message size (bytes)", scenario.oaConfig.networkConfiguration.defaultMsgSizeBytes.toString());
       output.addAlgorithmResult(configName, "etx size (bytes)", scenario.oaConfig.networkConfiguration.etxSizeBytes.toString());
       output.addAlgorithmResult(configName, "number of etxs / block", scenario.oaConfig.networkConfiguration.numEtxsPerBlock.toString());
