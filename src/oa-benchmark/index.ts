@@ -111,6 +111,7 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
       output.addAlgorithmResult(configName, "broadcasts", scenario.statistics.totalBroadcasts.toString());
       output.addAlgorithmResult(configName, "unicasts", scenario.statistics.totalUnicasts.toString());
       output.addAlgorithmResult(configName, "multicasts", scenario.statistics.totalMulticasts.toString());
+      console.log(`%%%%%% Config ${configName}/${configs.length}`);
       for (const node of scenario.nodes) {
         const closedBlocks = node.benchmarkGetClosedBlocks();
         console.log(`%%%%%% Node ${node.nodeNumber}   Blocks: `);
