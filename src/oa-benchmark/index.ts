@@ -95,6 +95,7 @@ for (const file of shell.ls("-d", "src/oa-benchmark/scenarios/*")) {
       output.addAlgorithmResult(configName, "# Committee Members", scenario.committeeSize.toString());
       output.addAlgorithmResult(configName, "# Byzantine", scenario.numByz.toString());
       output.addAlgorithmResult(configName, "threshold size", scenario.sharingThreshold.toString());
+      output.addAlgorithmResult(configName, "proposal time limit", scenario.oaConfig.proposalTimeoutMs.toString());
       output.addAlgorithmResult(configName, "warnings", scenario.statistics.totalWarnings.toString());
       output.addAlgorithmResult(configName, "errors", scenario.statistics.totalErrors.toString());
       output.addAlgorithmResult(configName, "forks", Statistics.hasForks(scenario) ? "yes" : "no");
