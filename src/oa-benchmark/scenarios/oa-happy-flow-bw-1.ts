@@ -9,14 +9,15 @@ import OrbsBaseNode from "../../algorithms/oa-pbft/OrbsBaseNode";
 import OrbsScenario, { OrbsExpConfig } from "../../scenarios/oa-pbft/OrbsScenario";
 
 
-const TOTAL_NODE_FACTORS = [2, 1.5, 1];
-const COMMITTEE_SIZES = [4, 8, 16, 32, 64];
+const TOTAL_NODE_FACTORS = [2];
+const COMMITTEE_SIZES = [32];
 // const NUM_BYZ = [2]; // these won't actually be faulty, but used to determine f.
-const SHARING_THRESHOLD_FACTORS = [1, 1.5, 2];
-const ETX_SIZES_BYTES = [250, 500];
-const NUM_ETXS_PER_BLOCK =  [128, 256, 512, 1024, 2048, 4096, 8192, 16384];
-const NODE_BW_BITS_SEC = [1000000000, 500000000, 100000000];
-const MAX_SIMULATION_TIMESTAMP_MS = 100000;
+const SHARING_THRESHOLD_FACTORS = [2];
+const ETX_SIZES_BYTES = [500];
+const NUM_ETXS_PER_BLOCK =  [16384];
+const PROPOSAL_TIME_LIMITS_MS =  [5000];
+const NODE_BW_BITS_SEC = [100000000];
+const MAX_SIMULATION_TIMESTAMP_MS = 10000;
 const FAULTY_NODE_NAME = "HonestNode";
 const NETWORK_MODE = NetworkPropagationMode.Fastcast;
 
@@ -61,18 +62,20 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
     for (const nf of TOTAL_NODE_FACTORS) {
       for (const m of COMMITTEE_SIZES) {
         for (const k of SHARING_THRESHOLD_FACTORS) {
-            for (const e of ETX_SIZES_BYTES) {
-              for (const num_etxs of NUM_ETXS_PER_BLOCK) {
-                  for (const bw_bits of NODE_BW_BITS_SEC) {
+          for (const e of ETX_SIZES_BYTES) {
+            for (const num_etxs of NUM_ETXS_PER_BLOCK) {
+              for (const bw_bits of NODE_BW_BITS_SEC) {
+                for (const tp of PROPOSAL_TIME_LIMITS_MS) {
                   const numByz = Math.floor((m - 1) / 3);
                   const n = Math.ceil(nf * m);
-                  const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: m, numByz: numByz, sharingThreshold: (numByz * k + 1), faultyNodeName: FAULTY_NODE_NAME, networkConfiguration: OrbsScenario.getDefaultNetwork(n, e, num_etxs, bw_bits) };
+                  const oaConfig: OrbsExpConfig = { name: `${c}`, nNodesToCreate: n, committeeSize: m, numByz: numByz, sharingThreshold: (numByz * k + 1), faultyNodeName: FAULTY_NODE_NAME, networkConfiguration: OrbsScenario.getDefaultNetwork(n, e, num_etxs, bw_bits), proposalTimeoutMs: tp };
                   oaConfigs.push(oaConfig);
                   c++;
                 }
               }
             }
           }
+        }
       }
     return oaConfigs;
   }

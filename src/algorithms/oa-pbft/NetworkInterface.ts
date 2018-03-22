@@ -128,7 +128,7 @@ export class NetworkInterface implements Endpoint {
     }
     for (const connection of this.outgoingConnections) {
       if (allNodesTo[connection.to.nodeNumber - 1]) {
-          this.utils.logger.log("ToNode " + connection.to.nodeNumber);
+          // this.utils.logger.log("ToNode " + connection.to.nodeNumber);
           connection.send(message);
           this.utils.scenario.statistics.totalSentMessages++;
           this.utils.scenario.statistics.totalSentBytes += JSON.stringify(message).length;
@@ -184,9 +184,3 @@ export class NetworkInterface implements Endpoint {
   }
 
 }
-
-
-
-
-
-
