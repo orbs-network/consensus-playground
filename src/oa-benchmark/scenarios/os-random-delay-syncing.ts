@@ -11,7 +11,7 @@ import OrbsScenario, { OrbsExpConfig } from "../../scenarios/oa-pbft/OrbsScenari
 
 const NUM_NODES = [10];
 const COMMITTEE_SIZES = [7];
-const NUM_BYZ = [0, 1, 2, 3];
+const NUM_BYZ = [3];
 const SHARING_THRESHOLDS = [5];
 const NETWORK_MIN_DELAY_MS = 5;
 const NETWORK_MAX_DELAY_MS = 100;

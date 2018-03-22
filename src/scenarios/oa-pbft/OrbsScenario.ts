@@ -26,6 +26,7 @@ export interface OrbsExpConfig {
   committeeSize: number;
   numByz: number;
   sharingThreshold: number;
+  proposalTimeoutMs?: number;
   faultyNodeName: string;
   networkConfiguration: NetworkConfiguration;
 }

@@ -12,7 +12,7 @@ import { NetworkInterface } from "./NetworkInterface";
 
 import bind from "bind-decorator";
 
-const PROPOSAL_TIMER_MS = 2000;
+const DEFAULT_PROPOSAL_TIME_LIMIT_MS = 4000;
 
 enum Phase { // not used yet
     Agreeing,
@@ -62,6 +62,7 @@ export class ConsensusEngine {
   protected phase: Phase;
   protected pbftState: PBFTState;
   protected utils: Utils;
+  protected proposalTimeLimitMs: number;
 
   constructor(nodeNumber: number, decryptor: Decryptor, blockchain: Blockchain, mempool: Mempool, netInterface: NetworkInterface, utils: Utils, timer: Timer = undefined) {
     this.nodeNumber = nodeNumber;
@@ -76,6 +77,8 @@ export class ConsensusEngine {
     this.term = 0;
     this.utils = utils;
     this.initPBFT_State();
+    const proposalTimeLimit = utils.scenario.oaConfig.proposalTimeoutMs ? utils.scenario.oaConfig.proposalTimeoutMs : DEFAULT_PROPOSAL_TIME_LIMIT_MS;
+    this.setProposalTimeoutDuration(proposalTimeLimit);
   }
 
   @bind
@@ -105,6 +108,12 @@ export class ConsensusEngine {
         return -1;
       }
     }
+  }
+
+  @bind
+  setProposalTimeoutDuration(duration: number): void {
+    this.utils.logger.debug(`Setting proposal time limit to ${duration}`);
+    this.proposalTimeLimitMs = duration;
   }
 
  /**
@@ -155,7 +164,7 @@ export class ConsensusEngine {
     }
     else if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
       this.utils.logger.log(`Chosen as leader`);
-      this.timer.setProposalTimer(PROPOSAL_TIMER_MS);
+      this.timer.setProposalTimer(this.proposalTimeLimitMs);
       this.phase = Phase.Agreeing; // TODO fix phases
       const eBlock: EncryptedBlock = this.createNewEBlock();
       // this.pbftState.candidateEBlock = eBlock;
@@ -164,7 +173,7 @@ export class ConsensusEngine {
       this.handlePrePrepareMessage(prePrepMsg); // "sending the message to ourselves" since handling is identical
     }
     else if (this.utils.isCommitteeMember(this.cmap, this.nodeNumber)) {
-      this.timer.setProposalTimer(PROPOSAL_TIMER_MS);
+      this.timer.setProposalTimer(this.proposalTimeLimitMs);
       this.phase = Phase.Waiting; // TODO fix phases
       this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); // sync on messages from previous term
     }
@@ -753,7 +762,7 @@ export class ConsensusEngine {
 
   @bind
   enterNewView(): void {
-    this.timer.setProposalTimer(Math.pow(2, this.pbftState.view) * PROPOSAL_TIMER_MS);
+    this.timer.setProposalTimer(Math.pow(2, this.pbftState.view) * this.proposalTimeLimitMs);
     let proposal: Proposal = undefined;
     // if proposal already reached Prepared state, send the evidence and proposed
     // block as part of the view change message.
