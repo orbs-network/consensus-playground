@@ -9,15 +9,14 @@ import OrbsBaseNode from "../../algorithms/oa-pbft/OrbsBaseNode";
 import OrbsScenario, { OrbsExpConfig } from "../../scenarios/oa-pbft/OrbsScenario";
 
 
-const TOTAL_NODE_FACTORS = [2];
-const COMMITTEE_SIZES = [32];
-// const NUM_BYZ = [2]; // these won't actually be faulty, but used to determine f.
+const TOTAL_NODE_FACTORS = [1, 2];
+const COMMITTEE_SIZES = [4, 8, 16, 32, 64];
 const SHARING_THRESHOLD_FACTORS = [2];
-const ETX_SIZES_BYTES = [500];
-const NUM_ETXS_PER_BLOCK =  [16384];
-const PROPOSAL_TIME_LIMITS_MS =  [5000];
-const NODE_BW_BITS_SEC = [100000000];
-const MAX_SIMULATION_TIMESTAMP_MS = 10000;
+const ETX_SIZES_BYTES = [250];
+const NUM_ETXS_PER_BLOCK =  [128, 256, 512, 1024, 2048, 4096, 8192, 16384];
+const PROPOSAL_TIME_LIMITS_MS =  [2000, 3000, 4000, 5000, 10000];
+const NODE_BW_BITS_SEC = [1000000000, 500000000, 100000000, 5000000000, 1000000000];
+const MAX_SIMULATION_TIMESTAMP_MS = 100000;
 const FAULTY_NODE_NAME = "HonestNode";
 const NETWORK_MODE = NetworkPropagationMode.Fastcast;
 
@@ -77,9 +76,10 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
           }
         }
       }
-    return oaConfigs;
   }
+  return oaConfigs;
 }
+
   @bind
   maxSimulationTimestampMs(): number {
     return MAX_SIMULATION_TIMESTAMP_MS;
