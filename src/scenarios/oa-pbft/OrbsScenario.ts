@@ -17,6 +17,7 @@ const DEFAULT_MSG_SIZE_BYTES = 500;
 const DEFAULT_ETX_SIZE_BYTES = 250;
 const DEFAULT_SHARE_SIZE_BYTES = 60;
 const DEFAULT_NUM_ETX_PER_BLOCK = 1000;
+const DEFAULT_PROPOSAL_TIME_LIMIT_MS = 4000;
 
 
 
@@ -45,6 +46,7 @@ export default abstract class OrbsScenario extends BaseScenario {
     super(seed);
     if (!oaConfig) console.log(`Undefined oa config`);
     this.oaConfig = oaConfig;
+    this.oaConfig.proposalTimeoutMs = oaConfig.proposalTimeoutMs ? oaConfig.proposalTimeoutMs : DEFAULT_PROPOSAL_TIME_LIMIT_MS;
     this.seed = seed;
     this.committeeSize = this.numNodes;
     this.numByz = 0;
