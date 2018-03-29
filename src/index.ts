@@ -46,6 +46,11 @@ if (scenarioName === "oa-benchmark") {
   process.exit();
 }
 
+if (scenarioName === "oa-benchmark-multi") {
+  require("./oa-benchmark-multi");
+  process.exit();
+}
+
 if (scenarioName === "visualize") {
   require("./visualization");
   process.exit();
