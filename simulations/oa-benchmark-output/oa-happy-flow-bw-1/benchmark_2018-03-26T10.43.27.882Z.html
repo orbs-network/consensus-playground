@@ -1,0 +1,1128 @@
+
+      <html>
+      <head>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700" rel="stylesheet">
+        <style>
+          body {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 10px;
+          }
+          h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #45ADA8;
+          }
+          th {
+            font-weight: 700;
+            text-align: left;
+            color: #45ADA8;
+            background-color: #E5FCC2;
+          }
+          table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+            font-size: 12px;
+          }
+          tr:nth-child(odd) {
+            background-color: #f8f8f8;
+          }
+          .right {
+            text-align: right;
+          }
+        </style>
+      </head>
+      <body>
+    
+      <h2>oa-happy-flow-bw-1</h2>
+      <table>
+      <tr>
+        <th>algorithm</th>
+    
+        <th># Nodes</th>
+      
+        <th># Committee Members</th>
+      
+        <th># Byzantine</th>
+      
+        <th>threshold size</th>
+      
+        <th>proposal time limit</th>
+      
+        <th>warnings</th>
+      
+        <th>errors</th>
+      
+        <th>forks</th>
+      
+        <th>max timestamp</th>
+      
+        <th>closed blocks</th>
+      
+        <th>BW per node (Mbits/sec)</th>
+      
+        <th>base message size (bytes)</th>
+      
+        <th>etx size (bytes)</th>
+      
+        <th>number of etxs / block</th>
+      
+        <th>share size (bytes)</th>
+      
+        <th>total sent messages</th>
+      
+        <th>total bytes</th>
+      
+        <th>messages/node</th>
+      
+        <th>broadcasts</th>
+      
+        <th>unicasts</th>
+      
+        <th>multicasts</th>
+      
+      </tr>
+    
+        <tr>
+          <td>oa-pbft/1</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">126 - 126</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">128</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">16627583</td>
+        
+          <td class="right">3861189230</td>
+        
+          <td class="right">118969 - 135865</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">16627583</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/2</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">115 - 115</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">256</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">15169497</td>
+        
+          <td class="right">3519565524</td>
+        
+          <td class="right">108684 - 124432</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">15169497</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/3</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">98 - 98</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">512</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">12904276</td>
+        
+          <td class="right">2990938710</td>
+        
+          <td class="right">92227 - 105850</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">12904276</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/4</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">75 - 75</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">1024</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">9845591</td>
+        
+          <td class="right">2281329897</td>
+        
+          <td class="right">69906 - 80810</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">9845591</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/5</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">51 - 51</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">2048</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">6658064</td>
+        
+          <td class="right">1541500231</td>
+        
+          <td class="right">46992 - 55010</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">6658064</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/6</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">31 - 31</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">4096</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">3990063</td>
+        
+          <td class="right">923784300</td>
+        
+          <td class="right">27919 - 33006</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">3990063</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/7</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">888</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">18 - 18</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">8192</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">2264969</td>
+        
+          <td class="right">716531364</td>
+        
+          <td class="right">15881 - 18852</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">1008</td>
+        
+          <td class="right">2263961</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/8</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">10 - 10</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">16384</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">1197756</td>
+        
+          <td class="right">279277964</td>
+        
+          <td class="right">8325 - 10057</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">504</td>
+        
+          <td class="right">1197252</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/9</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">241</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">5 - 5</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">32768</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">559916</td>
+        
+          <td class="right">140323785</td>
+        
+          <td class="right">3674 - 4920</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">567</td>
+        
+          <td class="right">559349</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/10</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">22</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">2 - 2</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">65536</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">138291</td>
+        
+          <td class="right">32985839</td>
+        
+          <td class="right">897 - 1277</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">377</td>
+        
+          <td class="right">137914</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/11</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">118 - 118</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">128</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">28908621</td>
+        
+          <td class="right">5619510564</td>
+        
+          <td class="right">206713 - 235584</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">28908621</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/12</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">102 - 102</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">256</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">24962336</td>
+        
+          <td class="right">4844527171</td>
+        
+          <td class="right">178608 - 203096</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">24962336</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/13</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">80 - 80</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">512</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">19526752</td>
+        
+          <td class="right">3788018705</td>
+        
+          <td class="right">139470 - 159622</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">19526752</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/14</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">57 - 57</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">1024</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">13836158</td>
+        
+          <td class="right">2683201561</td>
+        
+          <td class="right">98742 - 112826</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">13836158</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/15</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">36 - 36</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">2048</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">8647583</td>
+        
+          <td class="right">1675278158</td>
+        
+          <td class="right">61699 - 70658</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">8647583</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/16</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">757</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">21 - 21</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">4096</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">4942266</td>
+        
+          <td class="right">962793936</td>
+        
+          <td class="right">35328 - 40736</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">763</td>
+        
+          <td class="right">4941503</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/17</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">11 - 11</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">8192</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">2475004</td>
+        
+          <td class="right">480499714</td>
+        
+          <td class="right">17413 - 20551</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">630</td>
+        
+          <td class="right">2474374</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/18</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">25</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">99983</td>
+        
+          <td class="right">5 - 5</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">16384</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">993226</td>
+        
+          <td class="right">193976210</td>
+        
+          <td class="right">6990 - 8317</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">528</td>
+        
+          <td class="right">992698</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/19</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">296</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">4 - 4</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">32768</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">741909</td>
+        
+          <td class="right">145314051</td>
+        
+          <td class="right">5149 - 6250</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">567</td>
+        
+          <td class="right">741342</td>
+        
+        </tr>
+      
+        <tr>
+          <td>oa-pbft/20</td>
+      
+          <td class="right">128</td>
+        
+          <td class="right">64</td>
+        
+          <td class="right">21</td>
+        
+          <td class="right">43</td>
+        
+          <td class="right">5000</td>
+        
+          <td class="right">126</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">100000</td>
+        
+          <td class="right">3 - 3</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">65536</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">496168</td>
+        
+          <td class="right">96704566</td>
+        
+          <td class="right">3432 - 4213</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">323</td>
+        
+          <td class="right">495845</td>
+        
+        </tr>
+      
+      </table>
+    
+      <h2>os-random-delay-syncing</h2>
+      <table>
+      <tr>
+        <th>algorithm</th>
+    
+        <th># Nodes</th>
+      
+        <th># Committee Members</th>
+      
+        <th># Byzantine</th>
+      
+        <th>threshold size</th>
+      
+        <th>proposal time limit</th>
+      
+        <th>warnings</th>
+      
+        <th>errors</th>
+      
+        <th>forks</th>
+      
+        <th>max timestamp</th>
+      
+        <th>closed blocks</th>
+      
+        <th>BW per node (Mbits/sec)</th>
+      
+        <th>base message size (bytes)</th>
+      
+        <th>etx size (bytes)</th>
+      
+        <th>number of etxs / block</th>
+      
+        <th>share size (bytes)</th>
+      
+        <th>total sent messages</th>
+      
+        <th>total bytes</th>
+      
+        <th>messages/node</th>
+      
+        <th>broadcasts</th>
+      
+        <th>unicasts</th>
+      
+        <th>multicasts</th>
+      
+      </tr>
+    
+        <tr>
+          <td>oa-pbft/1</td>
+      
+          <td class="right">10</td>
+        
+          <td class="right">7</td>
+        
+          <td class="right">3</td>
+        
+          <td class="right">5</td>
+        
+          <td class="right">4000</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">no</td>
+        
+          <td class="right">6565</td>
+        
+          <td class="right">2 - 2</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">500</td>
+        
+          <td class="right">250</td>
+        
+          <td class="right">1000</td>
+        
+          <td class="right">60</td>
+        
+          <td class="right">525</td>
+        
+          <td class="right">98605</td>
+        
+          <td class="right">31 - 71</td>
+        
+          <td class="right">0</td>
+        
+          <td class="right">15</td>
+        
+          <td class="right">510</td>
+        
+        </tr>
+      
+      </table>
+    
+      </body>
+      </html>
+    
