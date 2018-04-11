@@ -1,8 +1,6 @@
 import * as _ from "lodash";
 import * as path from "path";
 import * as shell from "shelljs";
-import BenchmarkOutput from "./BenchmarkOutput";
-// import { OrbsScenarioWithNodeModule } from "./BaseOrbsScenarioWithNode";
 import BaseOrbsScenarioWithNode from "./BaseOrbsScenarioWithNode";
 import { NodeModule } from "../simulation/BaseNode";
 import { ScenarioConfig, ScenarioResults, loadScenarioConfigJSON } from "./ScenarioConfig";
@@ -130,9 +128,15 @@ const scenarioDir = dir + "/" + scenarioConfig.name;
 fs.existsSync(scenarioDir) || fs.mkdirSync(scenarioDir);
 
 const scenarioResults = runScenario(scenarioConfig);
-
+let outFile = undefined;
 // create output directory for results, if it doesn't already exist
-fs.existsSync(dir) || fs.mkdirSync(dir);
-const outFile = (outputToFile) ? `${scenarioDir}/${scenarioConfig.orbsExpConfig.name}_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.json` : `${dir}/benchmark.json`; // 2 types of ':' for some reason...
+if (outputToFile) {
+  fs.existsSync(dir) || fs.mkdirSync(dir);
+  outFile = `${scenarioDir}/${scenarioConfig.orbsExpConfig.name}_${now.toISOString().replace(`:`, `.`).replace(`:`, `.`)}.json`;
+}
+else {
+  outFile = `${dir}/benchmark.json`; // 2 types of ':' for some reason...
+}
+
 shell.echo(JSON.stringify(scenarioResults)).to(outFile);
 shell.exec(`open ${outFile}`);
