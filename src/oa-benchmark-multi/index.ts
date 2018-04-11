@@ -8,6 +8,7 @@ import Statistics from "../simulation/Statistics";
 
 const fs = require("fs");
 const now = new Date(Date.now());
+const resultsMarker = "## Final Statistics ##:";
 
 function loadScenario(scenarioName: string): typeof BaseOrbsScenarioWithNode {
   try {
@@ -119,7 +120,6 @@ if (process.argv[4] == "v") {
 }
 
 
-// const scenarioConfig = require(`./${scenFilePath}`).scenarioConfig;
 const scenarioConfig = loadScenarioConfigJSON(`${scenJsonString}`);
 
 // create output directory for results, if it doesn't already exist
@@ -138,5 +138,4 @@ else {
   outFile = `${dir}/benchmark.json`; // 2 types of ':' for some reason...
 }
 
-shell.echo(JSON.stringify(scenarioResults)).to(outFile);
-shell.exec(`open ${outFile}`);
+shell.echo(`${resultsMarker}${JSON.stringify(scenarioResults)}`).to(outFile);
