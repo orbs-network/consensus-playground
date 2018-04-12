@@ -56,7 +56,7 @@ def load_exp_file(exp_filepath):
         
 if __name__ == "__main__":
     num_jobs = os.cpu_count() - 2
-    batch_size = 10 
+    batch_size = 1 
     keys,param_configs = load_exp_file(exp_file)
     all_configs = [dict(zip(keys,config)) for config in param_configs]
     scen_name = all_configs[0][KEY_EXP_NAME]
