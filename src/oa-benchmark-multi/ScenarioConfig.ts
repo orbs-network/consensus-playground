@@ -58,7 +58,8 @@ export function loadScenarioConfigJSON(scenJsonString: string): ScenarioConfig {
   const scenJson = JSON.parse(scenJsonString);
   const connectionParams = convertToConnectivityMatrix(scenJson["exp_config"]["net_config"]["c_mat"]);
   console.log(`cmat is ${JSON.stringify(connectionParams)}`);
-  const networkConfiguration: NetworkConfiguration = new NetworkConfiguration(scenJson["exp_config"]["net_config"]["node_bandwidths"], scenJson["exp_config"]["net_config"]["node_regions"], connectionParams, scenJson["exp_config"]["net_config"]["etx_size_bytes"], scenJson["exp_config"]["net_config"]["etx_share_bytes"],  scenJson["exp_config"]["net_config"]["num_etx_per_block"], scenJson["exp_config"]["net_config"]["msg_size_bytes"]);
+  const networkConfiguration: NetworkConfiguration = new NetworkConfiguration(scenJson["exp_config"]["net_config"]["node_bandwidths"], scenJson["exp_config"]["net_config"]["node_regions"], connectionParams, scenJson["exp_config"]["net_config"]["etx_size_bytes"],  scenJson["exp_config"]["net_config"]["num_etx_per_block"], scenJson["exp_config"]["net_config"]["msg_size_bytes"],
+  scenJson["exp_config"]["net_config"]["etx_share_bytes"]);
   const orbsExpConfig: OrbsExpConfig = { name: scenJson["exp_config"]["name"], nNodesToCreate: scenJson["exp_config"]["n"], committeeSize: scenJson["exp_config"]["m"], numByz: scenJson["exp_config"]["f"], sharingThreshold: scenJson["exp_config"]["k"], proposalTimeoutMs: scenJson["exp_config"]["p_time_limit"], faultyNodeName: scenJson["exp_config"]["faulty_name"], networkConfiguration: networkConfiguration };
   const scenarioConfig: ScenarioConfig = { name: scenJson["name"], randomSeed: scenJson["random_seed"], algorithmName: scenJson["algorithm_name"], orbsExpConfig: orbsExpConfig };
   return scenarioConfig;

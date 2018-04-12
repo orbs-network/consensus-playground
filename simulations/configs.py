@@ -8,8 +8,10 @@ Created on Thu Mar 29 11:22:14 2018
 from pathlib import Path
 
 root = Path(__file__).parent.parent.absolute()
+exp_dir = Path('exps')
 simulator_script = 'dist oa-benchmark-multi'
 results_marker = '## Final Statistics ##:'
+
 
 KEY_NM_FACTOR = 'nm_factor'
 KEY_M = 'm'
