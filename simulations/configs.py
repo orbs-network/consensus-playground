@@ -17,6 +17,7 @@ KEY_NM_FACTOR = 'nm_factor'
 KEY_M = 'm'
 KEY_BYZ_SETTING = 'byz_setting'
 KEY_SCEN_NAME = 'name'
+KEY_EXP_NAME = 'exp_name'
 KEY_KF_FACTOR = 'kf_factor'
 KEY_NUM_ETX_BLOCK = 'num_etx_per_block'
 KEY_PROPOSAL_TIME_LIMIT = 'p_time_limit'
@@ -35,7 +36,8 @@ KEY_ALG_NAME = 'algorithm_name'
 defaults = {
     KEY_NM_FACTOR: 2,
     KEY_M: 7,
-    KEY_SCEN_NAME: 'test',
+    KEY_SCEN_NAME: 'oa-standard-bw',
+    KEY_EXP_NAME: 'default_exp',
     KEY_ALG_NAME: 'oa-pbft',
     KEY_KF_FACTOR: 1,
     KEY_NUM_ETX_BLOCK: 1000,

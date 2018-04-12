@@ -45,6 +45,9 @@ function loadFaultyNode(algorithmName: string, faultyNodeName: string): typeof N
       case "FaultyForFewTermsNode": {
         return require(`../algorithms/${algorithmName}`).FaultyForFewTermsNode;
       }
+      case "HonestNode": {
+        return require(`../algorithms/${algorithmName}`).HonestNode;
+      }
       default: {
         return require(`../algorithms/${algorithmName}`).FaultyNode;
       }

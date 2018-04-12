@@ -31,7 +31,13 @@ export default class Scenario extends BaseOrbsScenarioWithNode {
   createNodes(): BaseNode[] {
     const nodes = [];
     for (let i = 0; i < this.oaConfig.nNodesToCreate; i++) {
-      nodes.push(new this.Node(this)); // no faulty nodes currently;
+      if (i < this.oaConfig.numByz) {
+        nodes.push(new this.FaultyNode(this));
+      }
+      else {
+        nodes.push(new this.Node(this));
+      }
+
     }
     return nodes;
   }

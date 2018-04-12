@@ -1,15 +1,16 @@
 {
-  "name": ["oa-happy-flow-bw-1"],
+  "name": ["oa-standard-bw"],
+  "exp_name": ["test_exp"],
   "algorithm_name": ["oa-pbft"],
-  "m": [4 , 8, 16],
+  "m": [4 , 8],
   "nm_factor": [1, 2],
   "byz_setting": ["max"],
   "kf_factor": [1],
-  "num_etx_per_block": [128, 256],
+  "num_etx_per_block": [1000],
   "etx_size_bytes": [250],
-  "p_time_limit": [2000, 3000],
+  "p_time_limit": [3000],
   "network_type": ["simple"],
   "node_bandwidths": [1000000000],
-  "faulty_name": ["HonestNode"]
+  "faulty_name": ["FaultyForFewTermsNode", "HonestNode"]
 
 }

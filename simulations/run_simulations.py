@@ -19,7 +19,6 @@ from toolz import partition_all
 from joblib import Parallel, delayed
 import pandas as pd
 import tqdm
-#import multiprocessing as mp
 
 
 exp_file = Path("exp_configs.json")
@@ -36,7 +35,7 @@ def run_batch(i, batch):
         results = run_simulation(config) 
         batch_results.append(results)
     df = pd.DataFrame(batch_results)
-    df.to_csv(str(exp_dir / config[KEY_SCEN_NAME] / ('batch_%d.csv' % (i))  ))
+    df.to_csv(str(exp_dir / config[KEY_EXP_NAME] / ('batch_%d.csv' % (i))  ))
     
         
 
@@ -60,7 +59,7 @@ if __name__ == "__main__":
     batch_size = 10 
     keys,param_configs = load_exp_file(exp_file)
     all_configs = [dict(zip(keys,config)) for config in param_configs]
-    scen_name = all_configs[0][KEY_SCEN_NAME]
+    scen_name = all_configs[0][KEY_EXP_NAME]
     out_dir = exp_dir / scen_name
     try:
         os.makedirs(out_dir)
