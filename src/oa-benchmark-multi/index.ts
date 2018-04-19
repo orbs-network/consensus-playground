@@ -104,6 +104,7 @@ function getScenarioResults(scenarioConfig: ScenarioConfig, scenario: BaseOrbsSc
   maxMessagesPerNode: (_.max(scenario.statistics.totalReceivedMessagesPerNode) || 0),
   numBroadcasts: scenario.statistics.totalBroadcasts,
   numUnicasts: scenario.statistics.totalUnicasts,
+  numCrashes: scenario.statistics.totalCrashes,
   numMulticasts: scenario.statistics.totalMulticasts };
   return scenarioResults;
 }

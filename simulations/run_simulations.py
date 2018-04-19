@@ -19,6 +19,7 @@ from toolz import partition_all
 from joblib import Parallel, delayed
 import pandas as pd
 import tqdm
+import argparse
 
 
 exp_file = Path("exp_configs.json")
@@ -29,24 +30,27 @@ def parse_results(raw_output):
     results = results_re.findall(raw_output)[0]
     return json.loads(results)
 
-def run_batch(i, batch):
+def run_batch(i, batch, print_log=False):
     batch_results = []
     for config in batch:
-        results = run_simulation(config) 
+        results = run_simulation(config, print_log=print_log) 
         batch_results.append(results)
     df = pd.DataFrame(batch_results)
     df.to_csv(str(exp_dir / config[KEY_EXP_NAME] / ('batch_%d.csv' % (i))  ))
     
         
 
-def run_simulation(param_dict, save_output=False):
+def run_simulation(param_dict, print_log=False, save_output=False):
     scen_config = ScenarioConfig(param_dict)
     cmd = ' '.join(['node', simulator_script, "'%s'" % (str(scen_config))])
     if save_output:
         cmd.append('v')
     with Popen(cmd, stdout=PIPE, shell=True, cwd=str(root)) as proc:
         result = proc.stdout.read().decode("utf-8")
-    return parse_results(result)
+        res = parse_results(result)
+        if print_log:
+            print (result)
+    return res
 
 def load_exp_file(exp_filepath):
     with exp_filepath.open() as f:
@@ -55,6 +59,11 @@ def load_exp_file(exp_filepath):
     return param_names, (itertools.product(*list(exp_configs.values())))
         
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Python simulations controller.')
+    parser.add_argument('--print_log', action='store_true',
+                    help='add this flag to print logs of all runs')
+    args = parser.parse_args()
+    print_log = args.print_log
     num_jobs = os.cpu_count() - 2
     batch_size = 1 
     keys,param_configs = load_exp_file(exp_file)
@@ -70,7 +79,7 @@ if __name__ == "__main__":
     executor = Parallel(n_jobs=num_jobs, verbose=100)
     do = delayed(run_batch)
 
-    tasks = (do(i, batch)
+    tasks = (do(i, batch, print_log)
              for i, batch in enumerate(partitions))
     executor(tasks)
     print('Batches complete. Collecting batch results...')

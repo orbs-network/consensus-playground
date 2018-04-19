@@ -36,6 +36,7 @@ export interface ScenarioResults {
   maxMessagesPerNode: number;
   numBroadcasts: number;
   numUnicasts: number;
+  numCrashes: number;
   numMulticasts: number;
 
 }

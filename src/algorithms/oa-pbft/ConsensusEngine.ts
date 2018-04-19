@@ -77,7 +77,7 @@ export class ConsensusEngine {
     this.term = 0;
     this.utils = utils;
     this.initPBFT_State();
-    const proposalTimeLimit = utils.scenario.oaConfig.proposalTimeoutMs ? utils.scenario.oaConfig.proposalTimeoutMs : DEFAULT_PROPOSAL_TIME_LIMIT_MS;
+    const proposalTimeLimit = utils.scenario.oaConfig ? utils.scenario.oaConfig.proposalTimeoutMs : DEFAULT_PROPOSAL_TIME_LIMIT_MS;
     this.setProposalTimeoutDuration(proposalTimeLimit);
   }
 

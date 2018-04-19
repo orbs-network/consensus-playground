@@ -18,6 +18,7 @@ export default class Statistics {
   public totalBroadcasts: number = 0;
   public totalMulticasts: number = 0;
   public totalUnicasts: number = 0;
+  public totalCrashes: number = 0;
   public shouldRecordMessagesByInterval = -1; // interval > 0 in ms if you want to record
   public recordedMessagesByInterval: RecordedMessagesInInterval[] = [];
   public recordedMessageValues: {[value: string]: boolean} = {};

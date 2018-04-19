@@ -7,6 +7,8 @@ import Logger from "./Logger";
 import NodeStartEvent from "./events/NodeStartEvent";
 import MessageEvent from "./events/MessageEvent";
 import TimeoutEvent from "./events/TimeoutEvent";
+import WakeEvent from "./events/WakeEvent";
+import CrashEvent from "./events/CrashEvent";
 import * as colors from "colors";
 import bind from "bind-decorator";
 
@@ -17,6 +19,7 @@ export default abstract class BaseNode implements Endpoint {
   protected scenario: BaseScenario;
   protected static numNodes = 0;
   protected logger: Logger;
+  protected sleeping: boolean = false;
 
   constructor(scenario: BaseScenario) {
     this.scenario = scenario;
@@ -31,6 +34,16 @@ export default abstract class BaseNode implements Endpoint {
 
   onTimeout(event: TimeoutEvent): void {}
 
+  onCrash(event: CrashEvent): void {
+    this.log(`Crashed!`);
+    this.sleeping = true;
+  }
+
+  onWake(event: WakeEvent): void {
+    this.log(`Woke up!`);
+    this.sleeping = false;
+  }
+
   abstract benchmarkGetClosedBlocks(): any[];
 
   abstract benchmarkAreClosedBlocksIdentical(block1: any, block2: any): boolean;
@@ -41,12 +54,16 @@ export default abstract class BaseNode implements Endpoint {
 
   @bind
   handleEvent(event: BaseEvent): void {
-    if (event instanceof NodeStartEvent) {
+    if (event instanceof WakeEvent) this.onWake(event);
+    else if (this.sleeping) return;
+    else if (event instanceof NodeStartEvent) {
       this.onStart(event);
     } else if (event instanceof MessageEvent) {
       this.onMessage(event);
     } else if (event instanceof TimeoutEvent) {
       this.onTimeout(event);
+    } else if (event instanceof CrashEvent) {
+      this.onCrash(event);
     }
   }
 

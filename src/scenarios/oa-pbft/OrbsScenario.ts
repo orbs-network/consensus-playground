@@ -22,13 +22,13 @@ const DEFAULT_PROPOSAL_TIME_LIMIT_MS = 4000;
 
 
 export interface OrbsExpConfig {
-  name: string;
+  name?: string;
   nNodesToCreate: number;
-  committeeSize: number;
-  numByz: number;
-  sharingThreshold: number;
+  committeeSize?: number;
+  numByz?: number;
+  sharingThreshold?: number;
   proposalTimeoutMs?: number;
-  faultyNodeName: string;
+  faultyNodeName?: string;
   networkConfiguration: NetworkConfiguration;
 }
 
@@ -44,9 +44,11 @@ export default abstract class OrbsScenario extends BaseScenario {
 
   constructor(seed: string, oaConfig: OrbsExpConfig = undefined) {
     super(seed);
-    if (!oaConfig) console.log(`Undefined oa config`);
-    this.oaConfig = oaConfig;
-    this.oaConfig.proposalTimeoutMs = oaConfig.proposalTimeoutMs ? oaConfig.proposalTimeoutMs : DEFAULT_PROPOSAL_TIME_LIMIT_MS;
+    if (!oaConfig) {
+      console.log(`Undefined oa config, using default...`);
+      this.oaConfig = OrbsScenario.getDefaultOrbsExpConfig(this.numNodes);
+    }
+    else this.oaConfig = oaConfig;
     this.seed = seed;
     this.committeeSize = this.numNodes;
     this.numByz = 0;
@@ -70,6 +72,10 @@ export default abstract class OrbsScenario extends BaseScenario {
   getNetworkPropagationMode(): NetworkPropagationMode  { return this.networkPropagationMode; }
   getNetworkConfiguration(): NetworkConfiguration {
     return OrbsScenario.getDefaultNetwork(this.numNodes);
+  }
+  static getDefaultOrbsExpConfig(numNodes: number): OrbsExpConfig {
+    const orbsExpConfig: OrbsExpConfig = { nNodesToCreate: numNodes, networkConfiguration: OrbsScenario.getDefaultNetwork(numNodes), proposalTimeoutMs: DEFAULT_PROPOSAL_TIME_LIMIT_MS };
+    return orbsExpConfig;
   }
 
   static getDefaultNetwork(numNodes: number, etxSizeBytes: number = DEFAULT_ETX_SIZE_BYTES, numEtxsPerBlock: number = DEFAULT_NUM_ETX_PER_BLOCK, bandwidthBitsSec: number = DEFAULT_BANDWIDTH_BITS_SEC, defaultMsgSizeBytes: number = DEFAULT_MSG_SIZE_BYTES, etxShareBytes: number = DEFAULT_SHARE_SIZE_BYTES): NetworkConfiguration {
@@ -106,6 +112,8 @@ export default abstract class OrbsScenario extends BaseScenario {
     this.log(`broadcasts ${this.statistics.totalBroadcasts}`);
     this.log(`unicasts ${this.statistics.totalUnicasts}`);
     this.log(`multicasts ${this.statistics.totalMulticasts}`);
+    this.log(`sim duration ${this.maxSimulationTimestampMs()}`);
+    this.log(`total crashes ${this.statistics.totalCrashes}`);
   }
 }
 
