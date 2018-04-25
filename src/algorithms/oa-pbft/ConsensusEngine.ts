@@ -14,7 +14,7 @@ import bind from "bind-decorator";
 
 const DEFAULT_PROPOSAL_TIME_LIMIT_MS = 4000;
 
-enum Phase { // not used yet
+enum Phase { // not used yet TODO maybe remove?
     Agreeing,
     Waiting,
     Decrypting,
@@ -152,8 +152,6 @@ export class ConsensusEngine {
 
     this.cmap = this.sortition(lastDBlock);
     this.initPBFT_State();
-    // this.term += 1;
-    // this.term = Math.max(this.term, lastDBlock.term) + 1;
     this.term = lastDBlock.term + 1;
     this.utils.logger.log(`Entering term ${this.term}, committee is ${this.utils.getCommittee(this.cmap)}`);
 
@@ -165,16 +163,15 @@ export class ConsensusEngine {
     else if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view)) {
       this.utils.logger.log(`Chosen as leader`);
       this.timer.setProposalTimer(this.proposalTimeLimitMs);
-      this.phase = Phase.Agreeing; // TODO fix phases
+      this.phase = Phase.Agreeing;
       const eBlock: EncryptedBlock = this.createNewEBlock();
-      // this.pbftState.candidateEBlock = eBlock;
       const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: eBlock, eBlockHash: eBlock.hash, size_bytes: (this.utils.scenario.oaConfig.networkConfiguration.numEtxsPerBlock * this.utils.scenario.oaConfig.networkConfiguration.etxSizeBytes + this.utils.scenario.oaConfig.networkConfiguration.defaultMsgSizeBytes) };
       this.multicastCommittee(prePrepMsg);
       this.handlePrePrepareMessage(prePrepMsg); // "sending the message to ourselves" since handling is identical
     }
     else if (this.utils.isCommitteeMember(this.cmap, this.nodeNumber)) {
       this.timer.setProposalTimer(this.proposalTimeLimitMs);
-      this.phase = Phase.Waiting; // TODO fix phases
+      this.phase = Phase.Waiting;
       this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]); // sync on messages from previous term
     }
     else {
@@ -200,6 +197,9 @@ export class ConsensusEngine {
     }
   }
 
+  /**
+   * initialize a new PBFT state but keep outOfSyncMessages,newViewMessages from this and future terms.
+   */
   @bind
   initPBFT_State(): void {
     if (this.pbftState) this.utils.logger.debug(`Initializing PBFT state, out of sync messages are ${JSON.stringify(this.pbftState.outOfSyncMessages)}`);
@@ -230,6 +230,13 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Check if message is from future:
+   * - same term but from 2 levels above w.r.t pbft rounds (I'm at preprepare stage, message is commit)
+   * - higher term
+   * - higher view
+   * @param message - Some ConsensusMessage
+   */
   @bind
   isMessageFromFuture(msg: Message): boolean {
     if (((this.getConMsgLevel(msg.conMsgType) > (this.pbftState.progress + 1)) && (msg.term == this.term)) || (msg.term > this.term) || (msg.view > this.pbftState.view)) {
@@ -240,7 +247,9 @@ export class ConsensusEngine {
 
   }
 
-
+  /**
+   * Check given eBlockHash matches nodes current candidateEBlock hash
+   */
   @bind
   isValidEBlockHash(eBlockHash: string): boolean {
     if (eBlockHash != this.pbftState.candidateEBlock.hash) {
@@ -258,8 +267,9 @@ export class ConsensusEngine {
     return true;
   }
 
-
-
+  /**
+   * Create a new EBlock and connect it to last Eblock.
+   */
   @bind
   createNewEBlock(): EncryptedBlock {
     const randomContent = this.mempool.generateContent();
@@ -268,6 +278,9 @@ export class ConsensusEngine {
     return eBlock;
   }
 
+  /**
+   * Create a new BlockProof
+   */
   @bind
   createNewBP(): BlockProof {
     const blockProof: BlockProof = { term: this.term, hash: undefined, prepares: new Array(this.utils.numNodes).fill(false), commits: new Array(this.utils.numNodes).fill(false), committed: false };
@@ -298,16 +311,19 @@ export class ConsensusEngine {
 
   /**
    * Given array of proposals or boolean indicator array, check if votes constitute a
-   * 2/3+ majority. Assuming validity of the proposals.
+   * 2f + 1 majority. Assuming validity of the proposals.
    * @param VoteArr - array of booleans or general objects
    * @param cmap - committee map
-   * @return {number} - number of true/existing objects is returned
+   * @return bool -  true if votes constitute a 2f + 1 majority
    */
   @bind
   isValidByzMajorityVote(voteArr: any[], cmap: Cmap): boolean { // any to allow use with arrays of objects as well
     return this.utils.isByzMaj(this.countValidVotes(voteArr, cmap));
   }
 
+  /**
+   * Check that the given message and receipient are committee members.
+   */
   @bind
   isValidCommitteeMessage(msg: Message): boolean {
     if (!this.utils.isCommitteeMember(this.cmap, msg.sender)) {
@@ -327,6 +343,10 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Check that the given message's view is valid - that either it matches node's current pbft state
+   * view, or it is a NewView/ViewChange message for the next view.
+   */
   @bind
   isMessageViewValid(msg: Message): boolean {
     if (msg.view == this.pbftState.view) return true;
@@ -448,7 +468,6 @@ export class ConsensusEngine {
     if (!this.isValidCommitteeMessage(msg)) return false;
     if (!this.pbftState.candidateEBlock) {
       this.utils.logger.debug(`Receieved ${JSON.stringify(msg)}, but have no candidate EB!`);
-      // this.pbftState.outOfSyncMessages.push(msg);
       return false;
     }
     if (!this.isValidEBlockHash(msg.eBlockHash)) {
@@ -566,7 +585,6 @@ export class ConsensusEngine {
    */
   @bind
   handlePrepareMessage(msg: Message): void {
-    // TODO what about the case where we receive 2f+1 prepare messages before preprepare? A: can ask for the prepare message
     this.recheckConMessages([ConsensusMessageType.PrePrepare, ConsensusMessageType.Prepare, ConsensusMessageType.Commit]);
     if (this.isMessageFromFuture(msg)) {
       this.pbftState.outOfSyncMessages.push(msg);
@@ -675,15 +693,6 @@ export class ConsensusEngine {
       this.utils.logger.warn(`Block term ${msg.eBlock.term} doesn't match block proof term ${msg.blockProof.term}`);
       return false;
     }
-    // if (!(msg.eBlock.term == this.term)) {
-    //   if (msg.eBlock.term > this.term) {
-    //     this.utils.logger.debug(`Out of sync, at term ${this.term}, received committed block (${msg.eBlock.term},${msg.eBlock.hash})`);
-    //     // TODO handle node out of sync - we can use fast sync to validate message even if we aren't in sync
-    //     // TODO if we are in sync is there reason to do full validation?
-    //     if (!fastSyncing) return false;
-    //   }
-    //   else return false; // old message, ignore it
-    // }
 
     // fast sync-  a correct node needs only to verify that all the signers appearing in BP are indeed committee members according to the header of corresponding EB
     const cmap = msg.eBlock.cmap;
@@ -714,13 +723,9 @@ export class ConsensusEngine {
    */
   @bind
   handleCommittedMessage(msg: Message): void { // TODO separation between modules - decryptor
-    // if (msg.eBlock.term == 4) {
-    //     this.utils.logger.log(`Received EB+BP from ${msg.sender} for block (${msg.eBlock.term})`);
-    // }
     if (!this.isValidCommittedMessage(msg)) {
         return;
     }
-    // if (!this.decryptor.inDecryptingPhase(msg.eBlock.term)) {
     if (!this.decryptor.hasEBBP(msg.eBlock.term)) {
     // since node only enters phase once per term -> also send once
       this.utils.logger.log(`Received EB+BP from ${msg.sender} for block (${msg.eBlock.term})`);
@@ -788,12 +793,18 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Utility function- given an array of Messages and some validator function, count number of valid messages.
+   */
   @bind
   countValidMessages(msgs: Message[], validatorFn: (msg: Message) => boolean): number {
     const validMessages = msgs.filter(m => m ? validatorFn(m) : false);
     return validMessages.length;
   }
 
+  /**
+   * Check that the prepare messages corresponding to a given EB are valid. This is triggered by view changes for nodes which have already reached the prepared stage and have seen an EB with 2f + 1 prepare votes.
+   */
   @bind
   isValidProposalPrepareMessage(msg: Message, eBlock: EncryptedBlock): boolean {
     if (!this.isValidMessageType(msg, ConsensusMessageType.Prepare)) return false;
@@ -824,7 +835,7 @@ export class ConsensusEngine {
     // 2. on either same view or one behind.
     if (!this.isMessageInSync(msg)) {
       this.utils.logger.debug(`VC message out of sync.`);
-      return false; // TODO syncer should handle if needed?
+      return false;
     }
     if (!this.isValidCommitteeMessage(msg)) {
       this.utils.logger.debug(`invalid committee message}`);
@@ -885,10 +896,15 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Upon receiving a NewView Message,
+   * is designated as the next leader in the next view.
+   */
   @bind
   handleViewChangeMessage(msg: Message): void {
     if (!this.pbftState.collectingViewChangeMsgs) {
       if (this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view) || this.utils.isLeader(this.cmap, this.nodeNumber, this.pbftState.view + 1)) return;
+      // if we aren't collecting view change messages but still receive one warn in case we aren't current or next leaders because someone is out of sync or Byzantine
       else this.utils.logger.warn(`${msg.sender} thinks I'm new leader, but according to my state the new leader should be ${this.utils.getLeader(this.cmap, this.pbftState.view)} or ${this.utils.getLeader(this.cmap, this.pbftState.view + 1)}`);
       return;
     }
@@ -896,6 +912,7 @@ export class ConsensusEngine {
       this.utils.logger.debug(`Rejected ViewChange message ${JSON.stringify(msg)}`);
       return;
     }
+    // upon receiving enough view change messages, assume role as primary for new view
     this.utils.logger.debug(`Accepted ViewChange message ${JSON.stringify(msg)}`);
     this.updateEvidence(msg);
     if (this.isValidByzMajorityVote(this.pbftState.viewChangeMessages, this.cmap)) {
@@ -904,6 +921,11 @@ export class ConsensusEngine {
 
   }
 
+  /**
+   * Used by a new primary after a view change in case of an existing proposal.
+   * If there exists a non-null proposal, return the one with maximum views
+   * Otherwise, return the maximal view among all messages
+   */
   @bind
   getMaximalViewProposalMsg(vcMsgs: Message[]): Message {
     // if there exists a non-null proposal, return the one with maximum views
@@ -924,13 +946,19 @@ export class ConsensusEngine {
     else return maxViewMsg;
   }
 
+  /**
+   * Triggered upon a new primary receiving enough view change messages. Build new EB or use  one from previous views if exists, and send the NewView message.
+   */
   @bind
   enterPrimaryChangeTakeover() {
     this.utils.logger.log(`Received ${this.countValidVotes(this.pbftState.viewChangeMessages, this.cmap)} votes, needed  ${this.utils.numByz * 2 + 1}, assuming role as primary for view ${this.pbftState.view}.`);
-    const vcMsgs: Message[] = this.pbftState.viewChangeMessages; // TODO make sure deep copy or will be erased when new view entered
+
+    // save VC messages for proof of valid NewView, and stop collecting them, we have enough.
+    const vcMsgs: Message[] = this.pbftState.viewChangeMessages;
     this.pbftState.collectingViewChangeMsgs = false; // TODO currently this means that if the next leader received 2f+1
     // messages before his own timeout expires, his own view change message will not be handled
 
+    // get maximal view proposal out of vc messages, if any exist
     const maxPropMsg: Message = this.getMaximalViewProposalMsg(vcMsgs);
     if (!(this.pbftState.view == maxPropMsg.view)) {
       if (this.pbftState.view + 1 == maxPropMsg.view) this.enterNewView();
@@ -938,15 +966,14 @@ export class ConsensusEngine {
         this.utils.logger.error(`Not in sync: Maximum view proposal is ${maxPropMsg.view}, I'm at ${this.pbftState.view}`);
       }
     }
+    // if not, create own new EB
     if (!maxPropMsg.proposal) {
       this.pbftState.candidateEBlock = this.createNewEBlock();
     }
     else {
-      // if (maxProp.view != this.pbftState.view) {
-      //   this.utils.logger.error(`Not in sync: Maximum view proposal is ${maxProp.view}, I'm at ${this.pbftState.view}`);
-      // }
       this.pbftState.candidateEBlock = maxPropMsg.proposal.candidateEBlock;
     }
+    // Build NewView message
     const prePrepMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.PrePrepare, conMsgType: ConsensusMessageType.PrePrepare, term: this.term, view: this.pbftState.view, eBlock: this.pbftState.candidateEBlock };
     const newViewMsg: Message = { sender: this.nodeNumber, type: "ConsensusMessage" + "/" + ConsensusMessageType.NewView, conMsgType: ConsensusMessageType.NewView, term: this.term, view: this.pbftState.view, viewChangeMsgs: vcMsgs, newPrePrepMsg: prePrepMsg, size_bytes: (this.utils.scenario.oaConfig.networkConfiguration.numEtxsPerBlock * this.utils.scenario.oaConfig.networkConfiguration.etxSizeBytes + this.utils.scenario.oaConfig.networkConfiguration.defaultMsgSizeBytes) };
     this.multicastCommittee(newViewMsg);
@@ -961,9 +988,6 @@ export class ConsensusEngine {
     if (!this.isValidNewViewMessage(msg)) {
       return;
     }
-    // if ( [this.pbftState.view, (this.pbftState.view + 1) ].indexOf(msg.view) == -1 ) {
-    //   this.utils.logger.error(`Out of sync: NewView message view is ${msg.view}, I'm at ${this.pbftState.view}.`);
-    // }
     this.updateEvidence(msg);
     if (!this.getMaximalViewProposalMsg(msg.viewChangeMsgs).proposal) { // means that a new block was created, treat this as a new pbft round initialized by the attached pre-prepare message
       this.utils.logger.log(`Received new view message from ${msg.sender} with a newly created block, starting new round at view ${msg.view}`);
@@ -985,8 +1009,6 @@ export class ConsensusEngine {
       this.enterPrepared();
 
     }
-
-
 
   }
 

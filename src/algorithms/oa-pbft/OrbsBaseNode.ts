@@ -14,9 +14,7 @@ import { CryptoHandler } from "./CryptoHandler";
 import { Syncer } from "./Syncer";
 import BandwidthEndpoint from "../../simulation/BandwidthEndpoint";
 import BaseNode from "../../simulation/BaseNode";
-// import BaseScenario from "../../simulation/BaseScenario";
 import OrbsScenario from "../../scenarios/oa-pbft/OrbsScenario";
-// import BaseOrbsScenarioWithNode from "../../oa-benchmark/BaseOrbsScenarioWithNode";
 import BaseEvent from "../../simulation/BaseEvent";
 import MessageEvent from "../../simulation/events/MessageEvent";
 import TimeoutEvent from "../../simulation/events/TimeoutEvent";
@@ -47,8 +45,6 @@ export default abstract class OrbsBaseNode extends BaseNode implements Bandwidth
     this.timer = new Timer();
 
     this.decryptor = new Decryptor();
-    // this.netInterface = new NetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler,
-    //   this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils, scenario.getNetworkMode());
     this.netInterface = new BandwidthNetworkInterface(this.nodeNumber, this.outgoingConnections, this.mempoolHandler,
       this.blockchainHandler, this.cryptoHandler, this.consensusHandler, this.utils, scenario.getNetworkPropagationMode());
     this.consensusEngine = new ConsensusEngine(this.nodeNumber, this.decryptor, this.blockchain, this.mempool, this.netInterface, this.utils, this.timer);
@@ -78,7 +74,7 @@ export default abstract class OrbsBaseNode extends BaseNode implements Bandwidth
 
   @bind
   onTimeout(event: TimeoutEvent): void {
-    // this.time
+
   }
 
   @bind
