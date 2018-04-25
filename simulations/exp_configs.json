@@ -1,16 +1,16 @@
 {
   "name": ["oa-standard-faulties"],
-  "exp_name": ["test_exp"],
+  "exp_name": ["large_committee_faulties_exp"],
   "algorithm_name": ["oa-pbft"],
-  "m": [8],
-  "nm_factor": [1],
-  "byz_setting": ["max", "single", "none"],
+  "m": [4, 8, 16, 32, 64],
+  "nm_factor": [1, 2],
+  "byz_setting": ["max", "none"],
   "kf_factor": [1],
-  "num_etx_per_block": [1000],
+  "num_etx_per_block": [1000, 5000, 10000],
   "etx_size_bytes": [250],
-  "p_time_limit": [3000],
+  "p_time_limit": [1000, 2000, 3000, 4000],
   "network_type": ["simple"],
-  "node_bandwidths": [1000000000],
+  "node_bandwidths": [1000000000, 100000000],
   "faulty_name": ["HonestNode"]
 
 }
