@@ -39,7 +39,7 @@ export default abstract class OrbsScenarioFaulties extends OrbsScenario {
         const crashEvent = new CrashEvent(crashTime, this.nodes[n]);
         this.postEvent(crashEvent);
         this.statistics.totalCrashes++;
-        const wakeTime = Math.min(this.maxSimulationTimestamp, crashTime + this.randomizer.nextIntegerInRange(0, MAX_CRASH_DURATION_MS));
+        const wakeTime = Math.min(this.maxSimulationTimestampMs(), crashTime + this.randomizer.nextIntegerInRange(0, MAX_CRASH_DURATION_MS));
         this.log(`Node ${this.nodes[n].nodeNumber} wake time : ${wakeTime}`);
         const wakeEvent = new WakeEvent(wakeTime, this.nodes[n]);
         this.postEvent(wakeEvent);
